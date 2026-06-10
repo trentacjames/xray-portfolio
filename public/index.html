@@ -269,6 +269,27 @@
     </div>
   </div>
 
+  <div class="charts">
+    <div class="chart-card">
+      <h2>True Geographic Exposure</h2>
+      <div class="chart-wrapper">
+        <div class="chart-canvas-wrap">
+          <canvas id="trueGeoChart"></canvas>
+        </div>
+        <div class="legend" id="true-geo-legend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h2>True Sector Exposure</h2>
+      <div class="chart-wrapper">
+        <div class="chart-canvas-wrap">
+          <canvas id="trueSectorChart"></canvas>
+        </div>
+        <div class="legend" id="true-sector-legend"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="table-card">
     <h2>Holdings</h2>
     <div id="table-container" class="loading">Loading...</div>
@@ -318,6 +339,20 @@
         <span class="legend-pct">${g.percentage}%</span>
       </div>
     `).join('');
+  }
+
+  function lookthroughToGroups(obj, threshold = 0.5) {
+    let other = 0;
+    const groups = [];
+    for (const [name, pct] of Object.entries(obj)) {
+      if (pct >= threshold) {
+        groups.push({ name, percentage: pct });
+      } else {
+        other += pct;
+      }
+    }
+    if (other > 0) groups.push({ name: 'Other', percentage: parseFloat(other.toFixed(1)) });
+    return groups;
   }
 
   function buildTable(holdings) {
@@ -373,6 +408,14 @@
 
     buildChart('regionChart', data.byRegion);
     buildLegend('region-legend', data.byRegion);
+
+    const geoGroups = lookthroughToGroups(data.trueGeoExposure);
+    buildChart('trueGeoChart', geoGroups);
+    buildLegend('true-geo-legend', geoGroups);
+
+    const sectorGroups = lookthroughToGroups(data.trueSectorExposure);
+    buildChart('trueSectorChart', sectorGroups);
+    buildLegend('true-sector-legend', sectorGroups);
 
     buildTable(data.holdings);
   }

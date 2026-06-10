@@ -5,7 +5,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 154.3,
+    "currentPrice": 153.25,
     "assetClass": "Global Equity",
     "region": "Global"
   },
@@ -15,7 +15,7 @@
     "account": "Satrix TFSA",
     "currency": "ZAR",
     "units": 1,
-    "currentPrice": 12983,
+    "currentPrice": 12980,
     "assetClass": "US Equity",
     "region": "US"
   },
@@ -25,7 +25,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 80.07,
+    "currentPrice": 77.67,
     "assetClass": "Real Assets",
     "region": "Global"
   },
@@ -35,7 +35,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 110.14,
+    "currentPrice": 110.15,
     "assetClass": "Cash Equivalent",
     "region": "US"
   },
@@ -45,7 +45,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 227.52,
+    "currentPrice": 231.24,
     "assetClass": "US Equity",
     "region": "US"
   },
@@ -55,7 +55,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 161.56,
+    "currentPrice": 165.065,
     "assetClass": "Real Assets",
     "region": "Energy"
   },
@@ -65,7 +65,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 10.27,
+    "currentPrice": 10.08,
     "assetClass": "Real Assets",
     "region": "US"
   },
@@ -75,7 +75,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 184.05,
+    "currentPrice": 183.355,
     "assetClass": "Emerging Markets",
     "region": "South Korea"
   },
@@ -85,7 +85,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 53.4,
+    "currentPrice": 53.51,
     "assetClass": "Emerging Markets",
     "region": "Asia Pacific"
   },
@@ -95,7 +95,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 920.15,
+    "currentPrice": 863.005,
     "assetClass": "Individual Stock",
     "region": "US"
   }

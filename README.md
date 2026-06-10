@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Xray Portfolio Dashboard
 
 Xray is a portfolio exposure dashboard that gives investors a clear, real-time view of their underlying asset exposures across funds, ETFs, and other investment vehicles.
@@ -29,3 +30,7 @@ Install dependencies and start the development server:
 npm install
 npm start
 ```
+=======
+# xray-portfolio
+Xray is a portfolio exposure dashboard that gives investors a clear, real-time view of their underlying asset exposures across funds, ETFs, and other investment vehicles.
+>>>>>>> 88758056f87611f518fc9fbcbf511f9cbc6e83ba
