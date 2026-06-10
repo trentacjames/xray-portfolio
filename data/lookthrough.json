@@ -1,0 +1,135 @@
+{
+  "VT": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 63,
+      "Japan": 6,
+      "UK": 4,
+      "China": 3,
+      "Canada": 3,
+      "France": 3,
+      "Switzerland": 2,
+      "Germany": 2,
+      "Other": 14
+    },
+    "sectorBreakdown": {
+      "Technology": 23,
+      "Financials": 16,
+      "Healthcare": 12,
+      "Consumer Discretionary": 11,
+      "Industrials": 11,
+      "Communications": 7,
+      "Energy": 5,
+      "Consumer Staples": 5,
+      "Materials": 4,
+      "Real Estate": 3,
+      "Utilities": 3
+    }
+  },
+  "STXNDQ": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 97,
+      "Other": 3
+    },
+    "sectorBreakdown": {
+      "Technology": 57,
+      "Consumer Discretionary": 18,
+      "Healthcare": 7,
+      "Communications": 7,
+      "Industrials": 5,
+      "Financials": 3,
+      "Other": 3
+    }
+  },
+  "IAU": {
+    "type": "etf",
+    "geoBreakdown": {
+      "Global": 100
+    },
+    "sectorBreakdown": {
+      "Commodities": 100
+    }
+  },
+  "SHV": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 100
+    },
+    "sectorBreakdown": {
+      "Government Bonds": 100
+    }
+  },
+  "VDC": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 96,
+      "Other": 4
+    },
+    "sectorBreakdown": {
+      "Consumer Staples": 100
+    }
+  },
+  "VDE": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 95,
+      "Other": 5
+    },
+    "sectorBreakdown": {
+      "Energy": 100
+    }
+  },
+  "FPI": {
+    "type": "etf",
+    "geoBreakdown": {
+      "US": 100
+    },
+    "sectorBreakdown": {
+      "Real Estate": 100
+    }
+  },
+  "EWY": {
+    "type": "etf",
+    "geoBreakdown": {
+      "South Korea": 100
+    },
+    "sectorBreakdown": {
+      "Technology": 32,
+      "Financials": 16,
+      "Consumer Discretionary": 14,
+      "Industrials": 12,
+      "Communications": 8,
+      "Materials": 7,
+      "Healthcare": 4,
+      "Other": 7
+    }
+  },
+  "EPP": {
+    "type": "etf",
+    "geoBreakdown": {
+      "Australia": 62,
+      "Hong Kong": 22,
+      "Singapore": 14,
+      "New Zealand": 2
+    },
+    "sectorBreakdown": {
+      "Financials": 38,
+      "Real Estate": 18,
+      "Materials": 12,
+      "Industrials": 10,
+      "Consumer Staples": 7,
+      "Healthcare": 5,
+      "Other": 10
+    }
+  },
+  "GEV": {
+    "type": "stock",
+    "geoBreakdown": {
+      "US": 100
+    },
+    "sectorBreakdown": {
+      "Industrials": 100
+    }
+  }
+}

@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const fetchPrices = require('./fetchPrices');
+const calcLookthrough = require('./lookthrough');
 
 const app = express();
 const PORT = 3000;
@@ -29,10 +30,14 @@ function buildPortfolioResponse() {
       .sort((a, b) => b.value - a.value);
   }
 
+  const { trueGeoExposure, trueSectorExposure } = calcLookthrough();
+
   return {
     holdings,
     byAssetClass: breakdown('assetClass'),
     byRegion: breakdown('region'),
+    trueGeoExposure,
+    trueSectorExposure,
   };
 }
 
