@@ -8,6 +8,8 @@ const app = express();
 const PORT = 3000;
 const holdingsPath = path.join(__dirname, '..', 'data', 'holdings.json');
 
+let lastUpdated = fs.statSync(holdingsPath).mtime;
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function buildPortfolioResponse() {
@@ -50,6 +52,7 @@ app.get('/api/refresh', async (req, res) => {
   console.log(`[${new Date().toISOString()}] GET /api/refresh — refreshing prices...`);
   try {
     await fetchPrices();
+    lastUpdated = new Date();
     console.log(`[${new Date().toISOString()}] Refresh complete`);
     res.json(buildPortfolioResponse());
   } catch (err) {
@@ -58,12 +61,11 @@ app.get('/api/refresh', async (req, res) => {
   }
 });
 
-async function start() {
-  console.log('Fetching live prices...');
-  await fetchPrices();
-  app.listen(PORT, () => {
-    console.log(`Xray server running at http://localhost:${PORT}`);
-  });
-}
+app.get('/api/status', (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET /api/status`);
+  res.json({ lastUpdated });
+});
 
-start();
+app.listen(PORT, () => {
+  console.log(`Xray server running at http://localhost:${PORT}`);
+});

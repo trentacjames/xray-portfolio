@@ -246,6 +246,10 @@
       <div class="label">Accounts</div>
       <div class="value" id="total-accounts">—</div>
     </div>
+    <div class="stat-card">
+      <div class="label">Prices as of</div>
+      <div class="value" id="last-updated" style="font-size:1.1rem">—</div>
+    </div>
   </div>
 
   <div class="charts">
@@ -393,7 +397,15 @@
   }
 
   async function init() {
-    const data = await fetch('/api/portfolio').then(r => r.json());
+    const [data, status] = await Promise.all([
+      fetch('/api/portfolio').then(r => r.json()),
+      fetch('/api/status').then(r => r.json()),
+    ]);
+
+    const lastUpdated = new Date(status.lastUpdated);
+    document.getElementById('last-updated').textContent =
+      lastUpdated.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' ' + lastUpdated.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
     const totalValue = data.holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
     const accounts = new Set(data.holdings.map(h => h.account)).size;
