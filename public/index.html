@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xray Portfolio</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid #21262d;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #e6edf3;
+    }
+
+    header .logo {
+      width: 28px;
+      height: 28px;
+      background: #1f6feb;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Summary bar */
+    .summary {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 20px 28px;
+      flex: 1;
+    }
+
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #e6edf3;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-card .value.accent { color: #3fb950; }
+
+    /* Charts */
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .chart-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .chart-card h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .chart-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .chart-canvas-wrap {
+      flex-shrink: 0;
+      width: 160px;
+      height: 160px;
+    }
+
+    .legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-name {
+      flex: 1;
+      color: #c9d1d9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .legend-pct {
+      color: #8b949e;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Table */
+    .table-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .table-card h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px 24px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid #21262d;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #161b22;
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1c2129; }
+
+    tbody td {
+      padding: 13px 24px;
+      color: #c9d1d9;
+    }
+
+    .ticker {
+      font-weight: 600;
+      color: #58a6ff;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: #21262d;
+      color: #8b949e;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">XR</div>
+  <h1>Xray Portfolio</h1>
+</header>
+
+<main>
+  <div class="summary">
+    <div class="stat-card">
+      <div class="label">Total Value</div>
+      <div class="value accent" id="total-value">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Holdings</div>
+      <div class="value" id="total-holdings">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Accounts</div>
+      <div class="value" id="total-accounts">—</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <h2>Asset Class</h2>
+      <div class="chart-wrapper">
+        <div class="chart-canvas-wrap">
+          <canvas id="assetChart"></canvas>
+        </div>
+        <div class="legend" id="asset-legend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h2>Region</h2>
+      <div class="chart-wrapper">
+        <div class="chart-canvas-wrap">
+          <canvas id="regionChart"></canvas>
+        </div>
+        <div class="legend" id="region-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h2>Holdings</h2>
+    <div id="table-container" class="loading">Loading...</div>
+  </div>
+</main>
+
+<script>
+  const COLORS = [
+    '#1f6feb', '#3fb950', '#d29922', '#f78166',
+    '#a371f7', '#39d353', '#58a6ff', '#ff7b72',
+    '#ffa657', '#79c0ff',
+  ];
+
+  const chartDefaults = {
+    type: 'doughnut',
+    options: {
+      cutout: '68%',
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+        }
+      }},
+    }
+  };
+
+  function buildChart(id, groups) {
+    return new Chart(document.getElementById(id), {
+      ...chartDefaults,
+      data: {
+        labels: groups.map(g => g.name),
+        datasets: [{
+          data: groups.map(g => g.percentage),
+          backgroundColor: COLORS.slice(0, groups.length),
+          borderWidth: 0,
+          hoverOffset: 6,
+        }]
+      }
+    });
+  }
+
+  function buildLegend(containerId, groups) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = groups.map((g, i) => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${COLORS[i]}"></div>
+        <span class="legend-name">${g.name}</span>
+        <span class="legend-pct">${g.percentage}%</span>
+      </div>
+    `).join('');
+  }
+
+  function buildTable(holdings) {
+    const container = document.getElementById('table-container');
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Account</th>
+            <th>Asset Class</th>
+            <th>Region</th>
+            <th style="text-align:right">Units</th>
+            <th style="text-align:right">Price</th>
+            <th style="text-align:right">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${holdings.map(h => {
+            const value = (h.units * h.currentPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return `
+              <tr>
+                <td><span class="ticker">${h.ticker}</span></td>
+                <td>${h.name}</td>
+                <td><span class="badge">${h.account}</span></td>
+                <td>${h.assetClass}</td>
+                <td>${h.region}</td>
+                <td style="text-align:right">${h.units}</td>
+                <td style="text-align:right">${h.currency} ${h.currentPrice}</td>
+                <td style="text-align:right">${value}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function init() {
+    const data = await fetch('/api/portfolio').then(r => r.json());
+
+    const totalValue = data.holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const accounts = new Set(data.holdings.map(h => h.account)).size;
+
+    document.getElementById('total-value').textContent =
+      '$' + totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('total-holdings').textContent = data.holdings.length;
+    document.getElementById('total-accounts').textContent = accounts;
+
+    buildChart('assetChart', data.byAssetClass);
+    buildLegend('asset-legend', data.byAssetClass);
+
+    buildChart('regionChart', data.byRegion);
+    buildLegend('region-legend', data.byRegion);
+
+    buildTable(data.holdings);
+  }
+
+  init();
+</script>
+</body>
+</html>

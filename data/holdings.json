@@ -1,0 +1,102 @@
+[
+  {
+    "ticker": "VT",
+    "name": "Vanguard Total World Stock ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 154.3,
+    "assetClass": "Global Equity",
+    "region": "Global"
+  },
+  {
+    "ticker": "STXNDQ",
+    "name": "Satrix Nasdaq 100 ETF",
+    "account": "Satrix TFSA",
+    "currency": "ZAR",
+    "units": 1,
+    "currentPrice": 12983,
+    "assetClass": "US Equity",
+    "region": "US"
+  },
+  {
+    "ticker": "IAU",
+    "name": "iShares Gold Trust",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 80.07,
+    "assetClass": "Real Assets",
+    "region": "Global"
+  },
+  {
+    "ticker": "SHV",
+    "name": "iShares Short Treasury Bond ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 110.14,
+    "assetClass": "Cash Equivalent",
+    "region": "US"
+  },
+  {
+    "ticker": "VDC",
+    "name": "Vanguard Consumer Staples ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 227.52,
+    "assetClass": "US Equity",
+    "region": "US"
+  },
+  {
+    "ticker": "VDE",
+    "name": "Vanguard Energy ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 161.56,
+    "assetClass": "Real Assets",
+    "region": "Energy"
+  },
+  {
+    "ticker": "FPI",
+    "name": "Fortress REIT",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 10.27,
+    "assetClass": "Real Assets",
+    "region": "US"
+  },
+  {
+    "ticker": "EWY",
+    "name": "iShares MSCI South Korea ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 184.05,
+    "assetClass": "Emerging Markets",
+    "region": "South Korea"
+  },
+  {
+    "ticker": "EPP",
+    "name": "iShares MSCI Pacific ex Japan ETF",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 53.4,
+    "assetClass": "Emerging Markets",
+    "region": "Asia Pacific"
+  },
+  {
+    "ticker": "GEV",
+    "name": "GE Vernova",
+    "account": "EasyEquities USD",
+    "currency": "USD",
+    "units": 1,
+    "currentPrice": 920.15,
+    "assetClass": "Individual Stock",
+    "region": "US"
+  }
+]
