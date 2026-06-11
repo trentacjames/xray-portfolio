@@ -4,7 +4,7 @@
     "name": "Vanguard Total World Stock ETF",
     "account": "EasyEquities USD",
     "currency": "USD",
-    "units": 1,
+    "units": 3,
     "currentPrice": 153.25,
     "assetClass": "Global Equity",
     "region": "Global"
