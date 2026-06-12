@@ -5,7 +5,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 3,
-    "currentPrice": 153.25,
+    "currentPrice": 155.61,
     "assetClass": "Global Equity",
     "region": "Global"
   },
@@ -15,7 +15,7 @@
     "account": "Satrix TFSA",
     "currency": "ZAR",
     "units": 1,
-    "currentPrice": 12980,
+    "currentPrice": 12805,
     "assetClass": "US Equity",
     "region": "US"
   },
@@ -25,7 +25,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 77.67,
+    "currentPrice": 79.13,
     "assetClass": "Real Assets",
     "region": "Global"
   },
@@ -35,7 +35,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 110.15,
+    "currentPrice": 110.17,
     "assetClass": "Cash Equivalent",
     "region": "US"
   },
@@ -45,7 +45,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 231.24,
+    "currentPrice": 230.74,
     "assetClass": "US Equity",
     "region": "US"
   },
@@ -55,7 +55,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 165.065,
+    "currentPrice": 161.1,
     "assetClass": "Real Assets",
     "region": "Energy"
   },
@@ -65,7 +65,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 10.08,
+    "currentPrice": 9.89,
     "assetClass": "Real Assets",
     "region": "US"
   },
@@ -75,7 +75,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 183.355,
+    "currentPrice": 198.94,
     "assetClass": "Emerging Markets",
     "region": "South Korea"
   },
@@ -85,7 +85,7 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 53.51,
+    "currentPrice": 54.46,
     "assetClass": "Emerging Markets",
     "region": "Asia Pacific"
   },
@@ -95,8 +95,18 @@
     "account": "EasyEquities USD",
     "currency": "USD",
     "units": 1,
-    "currentPrice": 863.005,
+    "currentPrice": 906.79,
     "assetClass": "Individual Stock",
     "region": "US"
+  },
+  {
+    "ticker": "EASYGE.JO",
+    "name": "EasyETFs Global Equity Actively Managed ETF",
+    "account": "Manual",
+    "currency": "ZAc",
+    "units": 80,
+    "currentPrice": 1783,
+    "assetClass": "Other",
+    "region": "Other"
   }
 ]
