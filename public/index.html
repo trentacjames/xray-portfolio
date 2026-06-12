@@ -50,6 +50,136 @@
       padding: 32px 24px;
     }
 
+    /* Builder panel */
+    .builder-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+
+    .builder-card h2 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+
+    .builder-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .search-input, .units-input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 0.875rem;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus, .units-input:focus {
+      border-color: #1f6feb;
+    }
+
+    .search-input::placeholder, .units-input::placeholder {
+      color: #484f58;
+    }
+
+    .units-wrap {
+      width: 180px;
+      flex-shrink: 0;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      z-index: 100;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+
+    .dropdown-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.1s;
+    }
+
+    .dropdown-item:hover, .dropdown-item.active {
+      background: #1c2129;
+    }
+
+    .dropdown-symbol {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #58a6ff;
+      min-width: 72px;
+    }
+
+    .dropdown-name {
+      flex: 1;
+      font-size: 0.82rem;
+      color: #c9d1d9;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dropdown-exchange {
+      font-size: 0.7rem;
+      color: #484f58;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: #1f6feb;
+      color: #fff;
+    }
+
+    .btn-primary:not(:disabled):hover { background: #388bfd; }
+
+    .builder-error {
+      color: #f78166;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+
     /* Summary bar */
     .summary {
       display: flex;
@@ -217,6 +347,23 @@
       color: #8b949e;
     }
 
+    .btn-delete {
+      background: none;
+      border: none;
+      color: #484f58;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .btn-delete:hover {
+      color: #f78166;
+      background: rgba(247,129,102,0.1);
+    }
+
     .loading {
       text-align: center;
       padding: 60px;
@@ -233,6 +380,27 @@
 </header>
 
 <main>
+  <!-- Builder panel -->
+  <div class="builder-card">
+    <h2>Add Holding</h2>
+    <div class="builder-row">
+      <div class="search-wrap">
+        <input id="search-input" class="search-input" type="text"
+          placeholder="Search by name or ticker e.g. AAPL, Vanguard..." autocomplete="off" />
+        <div id="search-dropdown" class="dropdown" style="display:none"></div>
+      </div>
+      <div class="units-wrap" id="units-wrap" style="display:none">
+        <input id="units-input" class="units-input" type="number" step="any" min="0"
+          placeholder="Units e.g. 1.4687" />
+      </div>
+      <button id="add-btn" class="btn btn-primary" style="display:none" disabled>
+        Add to Portfolio
+      </button>
+    </div>
+    <div id="builder-error" class="builder-error" style="display:none"></div>
+  </div>
+
+  <!-- Summary bar -->
   <div class="summary">
     <div class="stat-card">
       <div class="label">Total Value</div>
@@ -256,18 +424,14 @@
     <div class="chart-card">
       <h2>Asset Class</h2>
       <div class="chart-wrapper">
-        <div class="chart-canvas-wrap">
-          <canvas id="assetChart"></canvas>
-        </div>
+        <div class="chart-canvas-wrap"><canvas id="assetChart"></canvas></div>
         <div class="legend" id="asset-legend"></div>
       </div>
     </div>
     <div class="chart-card">
       <h2>Region</h2>
       <div class="chart-wrapper">
-        <div class="chart-canvas-wrap">
-          <canvas id="regionChart"></canvas>
-        </div>
+        <div class="chart-canvas-wrap"><canvas id="regionChart"></canvas></div>
         <div class="legend" id="region-legend"></div>
       </div>
     </div>
@@ -277,18 +441,14 @@
     <div class="chart-card">
       <h2>True Geographic Exposure</h2>
       <div class="chart-wrapper">
-        <div class="chart-canvas-wrap">
-          <canvas id="trueGeoChart"></canvas>
-        </div>
+        <div class="chart-canvas-wrap"><canvas id="trueGeoChart"></canvas></div>
         <div class="legend" id="true-geo-legend"></div>
       </div>
     </div>
     <div class="chart-card">
       <h2>True Sector Exposure</h2>
       <div class="chart-wrapper">
-        <div class="chart-canvas-wrap">
-          <canvas id="trueSectorChart"></canvas>
-        </div>
+        <div class="chart-canvas-wrap"><canvas id="trueSectorChart"></canvas></div>
         <div class="legend" id="true-sector-legend"></div>
       </div>
     </div>
@@ -307,21 +467,19 @@
     '#ffa657', '#79c0ff',
   ];
 
-  const chartDefaults = {
-    type: 'doughnut',
-    options: {
-      cutout: '68%',
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%`
-        }
-      }},
-    }
-  };
+  const charts = {};
 
-  function buildChart(id, groups) {
-    return new Chart(document.getElementById(id), {
-      ...chartDefaults,
+  function renderChart(id, groups) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'doughnut',
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)}%` } },
+        },
+      },
       data: {
         labels: groups.map(g => g.name),
         datasets: [{
@@ -329,14 +487,13 @@
           backgroundColor: COLORS.slice(0, groups.length),
           borderWidth: 0,
           hoverOffset: 6,
-        }]
-      }
+        }],
+      },
     });
   }
 
-  function buildLegend(containerId, groups) {
-    const el = document.getElementById(containerId);
-    el.innerHTML = groups.map((g, i) => `
+  function renderLegend(containerId, groups) {
+    document.getElementById(containerId).innerHTML = groups.map((g, i) => `
       <div class="legend-item">
         <div class="legend-dot" style="background:${COLORS[i]}"></div>
         <span class="legend-name">${g.name}</span>
@@ -349,19 +506,15 @@
     let other = 0;
     const groups = [];
     for (const [name, pct] of Object.entries(obj)) {
-      if (pct >= threshold) {
-        groups.push({ name, percentage: pct });
-      } else {
-        other += pct;
-      }
+      if (pct >= threshold) groups.push({ name, percentage: pct });
+      else other += pct;
     }
     if (other > 0) groups.push({ name: 'Other', percentage: parseFloat(other.toFixed(1)) });
     return groups;
   }
 
-  function buildTable(holdings) {
-    const container = document.getElementById('table-container');
-    container.innerHTML = `
+  function renderTable(holdings) {
+    document.getElementById('table-container').innerHTML = `
       <table>
         <thead>
           <tr>
@@ -373,29 +526,184 @@
             <th style="text-align:right">Units</th>
             <th style="text-align:right">Price</th>
             <th style="text-align:right">Value</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           ${holdings.map(h => {
-            const value = (h.units * h.currentPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const value = (h.units * h.currentPrice).toLocaleString(undefined, {
+              minimumFractionDigits: 2, maximumFractionDigits: 2,
+            });
             return `
               <tr>
                 <td><span class="ticker">${h.ticker}</span></td>
                 <td>${h.name}</td>
                 <td><span class="badge">${h.account}</span></td>
-                <td>${h.assetClass}</td>
-                <td>${h.region}</td>
+                <td>${h.assetClass || '—'}</td>
+                <td>${h.region || '—'}</td>
                 <td style="text-align:right">${h.units}</td>
                 <td style="text-align:right">${h.currency} ${h.currentPrice}</td>
                 <td style="text-align:right">${value}</td>
+                <td style="text-align:right">
+                  <button class="btn-delete" data-ticker="${h.ticker}" title="Remove ${h.ticker}">×</button>
+                </td>
               </tr>
             `;
           }).join('')}
         </tbody>
       </table>
     `;
+
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+      btn.addEventListener('click', () => deleteTicker(btn.dataset.ticker));
+    });
   }
 
+  function renderSummary(holdings) {
+    const totalValue = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const accounts = new Set(holdings.map(h => h.account)).size;
+    document.getElementById('total-value').textContent =
+      '$' + totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('total-holdings').textContent = holdings.length;
+    document.getElementById('total-accounts').textContent = accounts;
+  }
+
+  function renderDashboard(data) {
+    renderSummary(data.holdings);
+    renderChart('assetChart', data.byAssetClass);
+    renderLegend('asset-legend', data.byAssetClass);
+    renderChart('regionChart', data.byRegion);
+    renderLegend('region-legend', data.byRegion);
+    renderChart('trueGeoChart', lookthroughToGroups(data.trueGeoExposure));
+    renderLegend('true-geo-legend', lookthroughToGroups(data.trueGeoExposure));
+    renderChart('trueSectorChart', lookthroughToGroups(data.trueSectorExposure));
+    renderLegend('true-sector-legend', lookthroughToGroups(data.trueSectorExposure));
+    renderTable(data.holdings);
+  }
+
+  async function refreshDashboard() {
+    const data = await fetch('/api/portfolio').then(r => r.json());
+    renderDashboard(data);
+    return data;
+  }
+
+  async function deleteTicker(ticker) {
+    await fetch(`/api/holdings/${ticker}`, { method: 'DELETE' });
+    await refreshDashboard();
+  }
+
+  /* ---- Builder ---- */
+  const searchInput  = document.getElementById('search-input');
+  const dropdown     = document.getElementById('search-dropdown');
+  const unitsWrap    = document.getElementById('units-wrap');
+  const unitsInput   = document.getElementById('units-input');
+  const addBtn       = document.getElementById('add-btn');
+  const errorEl      = document.getElementById('builder-error');
+
+  let selectedTicker = null;
+  let debounceTimer  = null;
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+  }
+
+  function clearError() {
+    errorEl.style.display = 'none';
+  }
+
+  function closeDropdown() {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+  }
+
+  function selectInstrument(symbol) {
+    searchInput.value = symbol;
+    selectedTicker = symbol;
+    closeDropdown();
+    unitsWrap.style.display = 'block';
+    addBtn.style.display = 'block';
+    addBtn.disabled = true;
+    unitsInput.value = '';
+    unitsInput.focus();
+    clearError();
+  }
+
+  unitsInput.addEventListener('input', () => {
+    addBtn.disabled = !unitsInput.value || parseFloat(unitsInput.value) <= 0;
+  });
+
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim();
+    clearTimeout(debounceTimer);
+
+    if (q.length < 2) {
+      closeDropdown();
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      const results = await fetch(`/api/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+      if (!results.length) { closeDropdown(); return; }
+
+      dropdown.innerHTML = results.map(r => `
+        <div class="dropdown-item" data-symbol="${r.symbol}">
+          <span class="dropdown-symbol">${r.symbol}</span>
+          <span class="dropdown-name">${r.shortname || r.symbol}</span>
+          <span class="dropdown-exchange">${r.exchange}</span>
+        </div>
+      `).join('');
+
+      dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', () => selectInstrument(item.dataset.symbol));
+      });
+
+      dropdown.style.display = 'block';
+    }, 300);
+  });
+
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  addBtn.addEventListener('click', async () => {
+    const units = parseFloat(unitsInput.value);
+    if (!selectedTicker || !units || units <= 0) return;
+
+    addBtn.disabled = true;
+    addBtn.textContent = 'Adding...';
+    clearError();
+
+    try {
+      const res = await fetch('/api/holdings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: selectedTicker, units }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || err.error || 'Unknown error');
+      }
+
+      searchInput.value = '';
+      unitsInput.value = '';
+      selectedTicker = null;
+      unitsWrap.style.display = 'none';
+      addBtn.style.display = 'none';
+      addBtn.textContent = 'Add to Portfolio';
+
+      await refreshDashboard();
+    } catch (err) {
+      showError(err.message);
+      addBtn.disabled = false;
+      addBtn.textContent = 'Add to Portfolio';
+    }
+  });
+
+  /* ---- Init ---- */
   async function init() {
     const [data, status] = await Promise.all([
       fetch('/api/portfolio').then(r => r.json()),
@@ -407,29 +715,7 @@
       lastUpdated.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) +
       ' ' + lastUpdated.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
-    const totalValue = data.holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
-    const accounts = new Set(data.holdings.map(h => h.account)).size;
-
-    document.getElementById('total-value').textContent =
-      '$' + totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    document.getElementById('total-holdings').textContent = data.holdings.length;
-    document.getElementById('total-accounts').textContent = accounts;
-
-    buildChart('assetChart', data.byAssetClass);
-    buildLegend('asset-legend', data.byAssetClass);
-
-    buildChart('regionChart', data.byRegion);
-    buildLegend('region-legend', data.byRegion);
-
-    const geoGroups = lookthroughToGroups(data.trueGeoExposure);
-    buildChart('trueGeoChart', geoGroups);
-    buildLegend('true-geo-legend', geoGroups);
-
-    const sectorGroups = lookthroughToGroups(data.trueSectorExposure);
-    buildChart('trueSectorChart', sectorGroups);
-    buildLegend('true-sector-legend', sectorGroups);
-
-    buildTable(data.holdings);
+    renderDashboard(data);
   }
 
   init();
