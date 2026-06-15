@@ -3,90 +3,30 @@ const fs = require('fs');
 const path = require('path');
 const YahooFinance = require('yahoo-finance2').default;
 const fetchPrices = require('./fetchPrices');
-const calcLookthrough = require('./lookthrough');
 
 const app = express();
 const PORT = 3000;
 const holdingsPath = path.join(__dirname, '..', 'data', 'holdings.json');
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
-const EXCHANGE_CURRENCY = {
-  NMS: 'USD', NGM: 'USD', NCM: 'USD', NYQ: 'USD', PCX: 'USD', NYSEArca: 'USD',
-  LSE: 'GBP',
-  JSE: 'ZAR',
-  TSX: 'CAD',
-  ASX: 'AUD',
-  EPA: 'EUR', ETR: 'EUR', BIT: 'EUR',
-  TYO: 'JPY',
-  HKG: 'HKD',
+const SECTOR_NAME_MAP = {
+  realestate:             'Real Estate',
+  consumer_cyclical:      'Consumer Discretionary',
+  basic_materials:        'Materials',
+  consumer_defensive:     'Consumer Staples',
+  communication_services: 'Communications',
+  financial_services:     'Financials',
+  technology:             'Technology',
+  industrials:            'Industrials',
+  healthcare:             'Healthcare',
+  energy:                 'Energy',
+  utilities:              'Utilities',
 };
 
 let lastUpdated = fs.statSync(holdingsPath).mtime;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
-
-function readHoldings() {
-  return JSON.parse(fs.readFileSync(holdingsPath, 'utf8'));
-}
-
-function writeHoldings(holdings) {
-  fs.writeFileSync(holdingsPath, JSON.stringify(holdings, null, 2));
-}
-
-function buildPortfolioResponse() {
-  const holdings = readHoldings();
-  const totalValue = holdings.reduce((sum, h) => sum + h.units * h.currentPrice, 0);
-
-  function breakdown(key) {
-    const groups = holdings.reduce((acc, h) => {
-      const value = h.units * h.currentPrice;
-      acc[h[key]] = (acc[h[key]] || 0) + value;
-      return acc;
-    }, {});
-
-    return Object.entries(groups)
-      .map(([name, value]) => ({
-        name,
-        value,
-        percentage: parseFloat(((value / totalValue) * 100).toFixed(1)),
-      }))
-      .sort((a, b) => b.value - a.value);
-  }
-
-  const { trueGeoExposure, trueSectorExposure } = calcLookthrough();
-
-  return {
-    holdings,
-    byAssetClass: breakdown('assetClass'),
-    byRegion: breakdown('region'),
-    trueGeoExposure,
-    trueSectorExposure,
-  };
-}
-
-app.get('/api/portfolio', (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET /api/portfolio`);
-  res.json(buildPortfolioResponse());
-});
-
-app.get('/api/refresh', async (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET /api/refresh — refreshing prices...`);
-  try {
-    await fetchPrices();
-    lastUpdated = new Date();
-    console.log(`[${new Date().toISOString()}] Refresh complete`);
-    res.json(buildPortfolioResponse());
-  } catch (err) {
-    console.error('Price refresh failed:', err.message);
-    res.status(500).json({ error: 'Price refresh failed', detail: err.message });
-  }
-});
-
-app.get('/api/status', (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET /api/status`);
-  res.json({ lastUpdated });
-});
 
 app.get('/api/search', async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -110,50 +50,71 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-app.post('/api/holdings', async (req, res) => {
-  const { ticker, units } = req.body;
-  if (!ticker || units == null) {
-    return res.status(400).json({ error: 'ticker and units are required' });
-  }
-  console.log(`[${new Date().toISOString()}] POST /api/holdings — ${ticker}`);
+app.get('/api/price/:ticker', async (req, res) => {
+  const ticker = req.params.ticker;
+  console.log(`[${new Date().toISOString()}] GET /api/price/${ticker}`);
   try {
-    const quote = await yahooFinance.quote(ticker.toUpperCase());
-    const holdings = readHoldings();
-    const existing = holdings.find(h => h.ticker === ticker.toUpperCase());
+    const quote = await yahooFinance.quote(ticker);
+    const result = {
+      ticker:    quote.symbol,
+      name:      quote.longName || quote.shortName || ticker,
+      price:     quote.regularMarketPrice,
+      currency:  quote.currency || 'USD',
+      quoteType: quote.quoteType,
+    };
 
-    if (existing) {
-      existing.units = units;
-    } else {
-      holdings.push({
-        ticker: ticker.toUpperCase(),
-        name: quote.longName || quote.shortName || ticker.toUpperCase(),
-        account: 'Manual',
-        currency: quote.currency || EXCHANGE_CURRENCY[quote.exchange] || 'USD',
-        units,
-        currentPrice: quote.regularMarketPrice,
-        assetClass: 'Other',
-        region: 'Other',
-      });
+    try {
+      if (quote.quoteType === 'ETF' || quote.quoteType === 'MUTUALFUND') {
+        const summary = await yahooFinance.quoteSummary(ticker, { modules: ['topHoldings'] });
+        const raw = summary.topHoldings?.sectorWeightings;
+        if (raw?.length) {
+          const sectorWeightings = {};
+          for (const entry of raw) {
+            for (const [key, val] of Object.entries(entry)) {
+              const name = SECTOR_NAME_MAP[key] || key;
+              sectorWeightings[name] = parseFloat((val * 100).toFixed(1));
+            }
+          }
+          result.sectorWeightings = sectorWeightings;
+        }
+        const holdingsList = summary.topHoldings?.holdings;
+        if (holdingsList?.length) {
+          result.topHoldings = holdingsList.slice(0, 15).map(h => ({
+            symbol: h.symbol,
+            name: h.holdingName,
+            pct: parseFloat((h.holdingPercent * 100).toFixed(2)),
+          }));
+        }
+      } else if (quote.quoteType === 'EQUITY') {
+        const summary = await yahooFinance.quoteSummary(ticker, { modules: ['assetProfile'] });
+        result.sector  = summary.assetProfile?.sector  || null;
+        result.country = summary.assetProfile?.country || null;
+      }
+    } catch (e) {
+      console.warn(`Classification unavailable for ${ticker}:`, e.message);
     }
 
-    writeHoldings(holdings);
-    res.json(readHoldings());
+    res.json(result);
   } catch (err) {
-    console.error('Add holding failed:', err.message);
-    res.status(500).json({ error: 'Failed to add holding', detail: err.message });
+    console.error(`Price fetch failed for ${ticker}:`, err.message);
+    res.status(500).json({ error: 'Failed to fetch price', detail: err.message });
   }
 });
 
-app.delete('/api/holdings/:ticker', (req, res) => {
-  const ticker = req.params.ticker.toUpperCase();
-  console.log(`[${new Date().toISOString()}] DELETE /api/holdings/${ticker}`);
-  const holdings = readHoldings();
-  const next = holdings.filter(h => h.ticker !== ticker);
-  if (next.length === holdings.length) {
-    return res.status(404).json({ error: `${ticker} not found` });
+app.get('/api/refresh', async (req, res) => {
+  console.log(`[${new Date().toISOString()}] GET /api/refresh`);
+  try {
+    await fetchPrices();
+    lastUpdated = new Date();
+    res.json({ ok: true, lastUpdated });
+  } catch (err) {
+    console.error('Refresh failed:', err.message);
+    res.status(500).json({ error: 'Refresh failed', detail: err.message });
   }
-  writeHoldings(next);
-  res.json(next);
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({ lastUpdated });
 });
 
 app.listen(PORT, () => {
