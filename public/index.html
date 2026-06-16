@@ -50,6 +50,21 @@
     }
     .btn-info:hover { border-color: #8b949e; color: #c9d1d9; }
 
+    .btn-menu {
+      display: none; flex-shrink: 0;
+      background: none; border: 1px solid #30363d; color: #8b949e;
+      cursor: pointer; width: 32px; height: 32px; border-radius: 6px;
+      font-size: 1rem; align-items: center; justify-content: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-menu:hover { border-color: #8b949e; color: #c9d1d9; }
+
+    #sidebar-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 148;
+    }
+    #sidebar-backdrop.active { display: block; }
+
     /* ── App layout ── */
     .app-layout {
       display: flex;
@@ -227,16 +242,29 @@
     .stat-chip-label {
       font-size: 0.68rem; color: #8b949e;
       text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+      display: flex; align-items: center; justify-content: space-between;
     }
     .stat-chip-value {
       font-size: 1.45rem; font-weight: 600; color: #e6edf3; letter-spacing: -0.02em;
     }
     .stat-chip-value.accent { color: #3fb950; }
 
+    .base-currency-select {
+      background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+      color: #58a6ff; font-size: 0.65rem; padding: 2px 6px;
+      cursor: pointer; outline: none; font-family: 'SF Mono','Fira Code',monospace;
+      font-weight: 600; transition: border-color 0.15s;
+    }
+    .base-currency-select:focus { border-color: #58a6ff; }
+
+    .fx-loading {
+      font-size: 0.65rem; color: #484f58; margin-left: 6px;
+    }
+
     /* Charts */
     .charts {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 14px;
       margin-bottom: 22px;
     }
@@ -248,7 +276,7 @@
       text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 18px;
     }
     .chart-wrapper { display: flex; align-items: center; gap: 22px; }
-    .chart-canvas-wrap { flex-shrink: 0; width: 148px; height: 148px; position: relative; }
+    .chart-canvas-wrap { flex-shrink: 0; width: 140px; height: 140px; position: relative; }
     .chart-placeholder {
       position: absolute; inset: 0; display: flex; align-items: center;
       justify-content: center; color: #484f58; font-size: 0.78rem; text-align: center;
@@ -447,15 +475,85 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
       font-size: 0.8rem; font-weight: 600; color: #58a6ff;
     }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      body { height: auto; overflow-y: auto; }
+
+      .btn-menu { display: flex; }
+
+      .app-layout { overflow: visible; }
+
+      .sidebar {
+        position: fixed;
+        top: 0; left: -290px;
+        width: 280px; height: 100vh;
+        z-index: 149;
+        transition: left 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: none;
+        border-right: 1px solid #21262d;
+      }
+      .sidebar.mobile-open {
+        left: 0;
+        box-shadow: 8px 0 32px rgba(0,0,0,0.45);
+      }
+
+      .main-content { overflow: visible; padding: 14px 16px; }
+
+      .stats-bar { flex-wrap: wrap; gap: 8px; }
+      .stat-chip { flex: 1 1 calc(50% - 4px); min-width: 0; padding: 12px 14px; }
+      .stat-chip-value { font-size: 1.15rem; }
+
+      .charts { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+      .chart-card { padding: 18px; }
+      .base-currency-select { font-size: 0.72rem; padding: 3px 8px; }
+
+      .table-card-header { padding: 12px 16px; }
+      .top-hold-row { padding: 9px 16px; }
+      .top-hold-bar { width: 60px; }
+
+      #limited-data-notice { padding: 10px 14px; }
+    }
+
+    @media (max-width: 480px) {
+      header { padding: 11px 16px; gap: 10px; }
+
+      .stat-chip { flex: 1 1 100%; }
+      .stat-chip-value { font-size: 1.05rem; }
+
+      .chart-wrapper { gap: 14px; }
+      .chart-canvas-wrap { width: 130px; height: 130px; }
+
+      #add-panel-overlay { align-items: flex-end; padding: 0; }
+      #add-panel {
+        border-radius: 16px 16px 0 0;
+        max-width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      #info-modal { border-radius: 12px 12px 0 0; max-height: 92vh; }
+      #info-modal-overlay { align-items: flex-end; padding: 0; }
+
+      #holding-modal { border-radius: 12px 12px 0 0; max-height: 92vh; }
+      #holding-modal-overlay { align-items: flex-end; padding: 0; }
+
+      .modal-grid { grid-template-columns: 1fr 1fr; }
+      .top-hold-symbol { width: 56px; }
+      .top-hold-bar { display: none; }
+    }
   </style>
 </head>
 <body>
 
 <header>
+  <button class="btn-menu" id="menu-btn" aria-label="Open holdings">☰</button>
   <div class="logo">XR</div>
   <h1>Xray Portfolio</h1>
   <button class="btn-info" id="info-btn" title="About & how it works">?</button>
 </header>
+
+<div id="sidebar-backdrop"></div>
 
 <div class="app-layout">
 
@@ -483,8 +581,19 @@
     <!-- Stats bar -->
     <div class="stats-bar">
       <div class="stat-chip">
-        <div class="stat-chip-label">Total Value</div>
-        <div class="stat-chip-value accent" id="total-value">$0.00</div>
+        <div class="stat-chip-label">
+          Total Value
+          <select id="base-currency-select" class="base-currency-select">
+            <option value="USD">USD</option>
+            <option value="ZAR">ZAR</option>
+            <option value="GBP">GBP</option>
+            <option value="EUR">EUR</option>
+            <option value="AUD">AUD</option>
+            <option value="CAD">CAD</option>
+            <option value="JPY">JPY</option>
+          </select>
+        </div>
+        <div class="stat-chip-value accent" id="total-value">—</div>
       </div>
       <div class="stat-chip">
         <div class="stat-chip-label">Holdings</div>
@@ -516,6 +625,16 @@
             <div class="chart-placeholder" id="trueSectorChart-placeholder">No holdings yet</div>
           </div>
           <div class="legend" id="true-sector-legend"></div>
+        </div>
+      </div>
+      <div class="chart-card" id="currency-chart-card" style="display:none">
+        <h2>Currency Exposure</h2>
+        <div class="chart-wrapper">
+          <div class="chart-canvas-wrap">
+            <canvas id="currencyChart"></canvas>
+            <div class="chart-placeholder" id="currencyChart-placeholder">No holdings yet</div>
+          </div>
+          <div class="legend" id="currency-legend"></div>
         </div>
       </div>
     </div>
@@ -670,10 +789,211 @@
 
   const getColor = i => COLORS[i % COLORS.length];
 
+  const CURRENCY_SYMBOLS = {
+    USD: '$', ZAR: 'R ', GBP: '£', EUR: '€',
+    AUD: 'A$', CAD: 'C$', JPY: '¥',
+  };
+
+  /* ── FX rates (all expressed as USD per 1 unit of that currency) ── */
+  let fxRates     = { USD: 1 };
+  let baseCurrency = localStorage.getItem('xray-base-currency') || 'USD';
+
+  function toBase(amount, fromCurrency) {
+    if (!fromCurrency || fromCurrency === baseCurrency) return amount;
+    const fromRate = fxRates[fromCurrency] || 1; // USD per 1 fromCurrency unit
+    const baseRate = fxRates[baseCurrency] || 1; // USD per 1 baseCurrency unit
+    return amount * fromRate / baseRate;
+  }
+
+  function formatBase(amount) {
+    const sym = CURRENCY_SYMBOLS[baseCurrency] || (baseCurrency + ' ');
+    return sym + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function displayTicker(ticker) {
+    return ticker.replace(/\.[A-Z]+$/, '');
+  }
+
+  function fmtNative(amount, currency) {
+    const sym = CURRENCY_SYMBOLS[currency] || (currency + ' ');
+    if (amount >= 1_000_000) return sym + (amount / 1_000_000).toFixed(2) + 'M';
+    if (amount >= 1_000)     return sym + (amount / 1_000).toFixed(1) + 'k';
+    return sym + amount.toFixed(2);
+  }
+
+  async function refreshFxRates() {
+    const holdings   = loadHoldings();
+    const currencies = [...new Set(holdings.map(h => h.currency).filter(Boolean))];
+    const foreign    = currencies.filter(c => c && c !== 'USD');
+
+    if (!foreign.length) { fxRates = { USD: 1 }; return; }
+
+    // Use localStorage cache (30 min TTL)
+    const cached    = localStorage.getItem('xray-fx-rates');
+    const cacheTime = parseInt(localStorage.getItem('xray-fx-timestamp') || '0');
+    if (cached && Date.now() - cacheTime < 30 * 60 * 1000) {
+      fxRates = JSON.parse(cached);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/fx?currencies=${foreign.join(',')}`);
+      fxRates = await res.json();
+      localStorage.setItem('xray-fx-rates', JSON.stringify(fxRates));
+      localStorage.setItem('xray-fx-timestamp', Date.now().toString());
+    } catch (e) {
+      console.warn('FX rates unavailable:', e.message);
+      if (cached) fxRates = JSON.parse(cached);
+    }
+  }
+
+  /* ── Hardcoded ETF fallback data ─────────────────────────────────────
+   * Used when Yahoo Finance has no sector or holdings data for an ETF.
+   * Keys are the base ticker (exchange suffix stripped automatically).
+   * sectorWeightings: { 'Technology': 51.0, ... } — percentages, ~100 total.
+   * topHoldings: [{ symbol, name, pct }] — pct is % of the ETF.
+   * ─────────────────────────────────────────────────────────────────── */
+  const FALLBACK_ETF_DATA = {
+
+    /* Satrix Nasdaq 100 ETF — 30 April 2026 */
+    'STXNDQ': {
+      sectorWeightings: {
+        'Technology':             53.73,
+        'Communications':         15.10,
+        'Consumer Discretionary': 12.23,
+        'Consumer Staples':        7.67,
+        'Healthcare':              4.18,
+        'Industrials':             3.65,
+        'Utilities':               1.39,
+        'Materials':               1.13,
+        'Energy':                  0.62,
+        'Financials':              0.23,
+        'Real Estate':             0.07,
+      },
+      topHoldings: [
+        { symbol: 'NVDA',  name: 'Nvidia Corp',         pct: 8.59 },
+        { symbol: 'AAPL',  name: 'Apple Inc',           pct: 7.06 },
+        { symbol: 'MSFT',  name: 'Microsoft Corp',      pct: 5.36 },
+        { symbol: 'AMZN',  name: 'Amazon.com Inc',      pct: 5.04 },
+        { symbol: 'GOOGL', name: 'Alphabet Inc Cl A',   pct: 3.96 },
+        { symbol: 'GOOG',  name: 'Alphabet Inc Cl C',   pct: 3.69 },
+        { symbol: 'AVGO',  name: 'Broadcom Inc',        pct: 3.51 },
+        { symbol: 'TSLA',  name: 'Tesla Inc',           pct: 3.37 },
+        { symbol: 'META',  name: 'Meta Platforms Inc',  pct: 3.20 },
+        { symbol: 'WMT',   name: 'Walmart Inc',         pct: 3.15 },
+      ],
+    },
+
+    /* Satrix MSCI India Feeder ETF — 30 April 2026 */
+    'SATIND': {
+      sectorWeightings: {
+        'Financials':             28.48,
+        'Consumer Discretionary': 12.10,
+        'Industrials':            11.10,
+        'Energy':                  9.18,
+        'Materials':               8.40,
+        'Technology':              7.64,
+        'Consumer Staples':        6.19,
+        'Healthcare':              6.15,
+        'Communications':          4.66,
+        'Utilities':               4.57,
+        'Real Estate':             1.34,
+      },
+      topHoldings: [
+        { symbol: 'HDFCBANK.NS',  name: 'HDFC Bank Ltd',                  pct: 6.60 },
+        { symbol: 'RELIANCE.NS',  name: 'Reliance Industries Ltd',         pct: 6.54 },
+        { symbol: 'ICICIBANK.NS', name: 'ICICI Bank Ltd',                  pct: 5.03 },
+        { symbol: 'BHARTIARTL.NS',name: 'Bharti Airtel Ltd',               pct: 3.64 },
+        { symbol: 'INFY',         name: 'Infosys Ltd',                     pct: 2.88 },
+        { symbol: 'AXISBANK.NS',  name: 'Axis Bank Ltd',                   pct: 2.19 },
+        { symbol: 'M&M.NS',       name: 'Mahindra And Mahindra Ltd',       pct: 2.17 },
+        { symbol: 'LT.NS',        name: 'Larsen And Toubro Ltd',           pct: 2.04 },
+        { symbol: 'BAJFINANCE.NS',name: 'Bajaj Finance Ltd',               pct: 1.97 },
+        { symbol: 'TCS.NS',       name: 'Tata Consultancy Services Ltd',   pct: 1.68 },
+      ],
+    },
+
+    /* Satrix MSCI Emerging Markets ETF — 30 April 2026 */
+    'STXEMG': {
+      sectorWeightings: {
+        'Technology':             34.74,
+        'Financials':             18.91,
+        'Consumer Discretionary':  9.36,
+        'Industrials':             8.75,
+        'Materials':               6.94,
+        'Communications':          6.33,
+        'Energy':                  3.61,
+        'Healthcare':              3.56,
+        'Consumer Staples':        3.43,
+        'Utilities':               2.25,
+        'Real Estate':             1.66,
+      },
+      topHoldings: [
+        { symbol: 'TSM',       name: 'Taiwan Semiconductor Manufacturing', pct: 12.31 },
+        { symbol: '005930.KS', name: 'Samsung Electronics Ltd',            pct:  5.22 },
+        { symbol: '000660.KS', name: 'SK Hynix Inc',                       pct:  3.49 },
+        { symbol: 'TCEHY',     name: 'Tencent Holdings Ltd',               pct:  2.83 },
+        { symbol: 'BABA',      name: 'Alibaba Group Holding Ltd',          pct:  2.04 },
+        { symbol: '2308.TW',   name: 'Delta Electronics Inc',              pct:  0.98 },
+        { symbol: '2454.TW',   name: 'Mediatek Inc',                       pct:  0.93 },
+        { symbol: '0939.HK',   name: 'China Construction Bank Corp H',     pct:  0.80 },
+        { symbol: 'HDFCBANK.NS',name: 'HDFC Bank Ltd',                     pct:  0.69 },
+        { symbol: 'RELIANCE.NS',name: 'Reliance Industries Ltd',           pct:  0.67 },
+      ],
+    },
+
+    /* Satrix S&P 500 ETF — 30 April 2026 */
+    'STX500': {
+      sectorWeightings: {
+        'Technology':             34.95,
+        'Financials':             12.00,
+        'Communications':         11.01,
+        'Consumer Discretionary':  9.96,
+        'Industrials':             8.79,
+        'Healthcare':              8.48,
+        'Consumer Staples':        4.93,
+        'Energy':                  3.50,
+        'Utilities':               2.34,
+        'Materials':               1.94,
+        'Real Estate':             1.92,
+      },
+      topHoldings: [
+        { symbol: 'NVDA',  name: 'Nvidia Corp',                    pct: 7.84 },
+        { symbol: 'AAPL',  name: 'Apple Inc',                      pct: 6.44 },
+        { symbol: 'MSFT',  name: 'Microsoft Corp',                 pct: 4.90 },
+        { symbol: 'AMZN',  name: 'Amazon.com Inc',                 pct: 4.19 },
+        { symbol: 'GOOGL', name: 'Alphabet Inc Class A',           pct: 3.62 },
+        { symbol: 'AVGO',  name: 'Broadcom Inc',                   pct: 3.20 },
+        { symbol: 'GOOG',  name: 'Alphabet Inc Class C',           pct: 2.89 },
+        { symbol: 'META',  name: 'Meta Platforms Inc Class A',     pct: 2.16 },
+        { symbol: 'TSLA',  name: 'Tesla Inc',                      pct: 1.74 },
+        { symbol: 'BRK-B', name: 'Berkshire Hathaway Inc Class B', pct: 1.40 },
+      ],
+    },
+
+  };
+
   /* ── localStorage ── */
   function loadHoldings() {
-    try { return JSON.parse(localStorage.getItem('xray-holdings') || '[]'); }
-    catch { return []; }
+    try {
+      const holdings = JSON.parse(localStorage.getItem('xray-holdings') || '[]');
+      for (const h of holdings) {
+        // Normalise any holdings stored in cents before the server-side fix
+        if (h.currency === 'ZAc') {
+          h.currentPrice = h.currentPrice / 100;
+          h.currency     = 'ZAR';
+        }
+        // Check all holdings — Yahoo misclassifies some JSE ETFs as EQUITY
+        const fb = FALLBACK_ETF_DATA[h.ticker]
+                || FALLBACK_ETF_DATA[h.ticker.replace(/\.[A-Z]+$/, '')];
+        if (!fb) continue;
+        // Presence in FALLBACK_ETF_DATA means it's an ETF regardless of what Yahoo returned
+        h.quoteType = 'ETF';
+        if (!h.sectorWeightings && fb.sectorWeightings) h.sectorWeightings = fb.sectorWeightings;
+        if (!h.topHoldings      && fb.topHoldings)      h.topHoldings      = fb.topHoldings;
+      }
+      return holdings;
+    } catch { return []; }
   }
 
   function saveHoldings(holdings) {
@@ -718,7 +1038,7 @@
 
   function calcBreakdown(holdings, key) {
     const excluded = loadExcluded();
-    const total = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const total = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
     if (!total) return [];
     const groups = {};
     for (const h of holdings) {
@@ -726,21 +1046,39 @@
       if (hasLimitedData(h)) continue;
       const k = key === 'assetClass' ? getAssetClass(h) : getRegion(h);
       if (!k) continue;
-      groups[k] = (groups[k] || 0) + h.units * h.currentPrice;
+      groups[k] = (groups[k] || 0) + toBase(h.units * h.currentPrice, h.currency);
     }
     return Object.entries(groups)
       .map(([name, value]) => ({ name, value, percentage: parseFloat(((value / total) * 100).toFixed(1)) }))
       .sort((a, b) => b.value - a.value);
   }
 
+  function calcCurrencyBreakdown(holdings) {
+    const excluded = loadExcluded();
+    const total = holdings.reduce((s, h) => {
+      if (excluded.has(h.ticker)) return s;
+      return s + toBase(h.units * h.currentPrice, h.currency);
+    }, 0);
+    if (!total) return [];
+    const groups = {};
+    for (const h of holdings) {
+      if (excluded.has(h.ticker)) continue;
+      const c = h.currency || 'USD';
+      groups[c] = (groups[c] || 0) + toBase(h.units * h.currentPrice, h.currency);
+    }
+    return Object.entries(groups)
+      .map(([name, value]) => ({ name, percentage: parseFloat(((value / total) * 100).toFixed(1)) }))
+      .sort((a, b) => b.percentage - a.percentage);
+  }
+
   function calcLookthrough(holdings) {
     const excluded = loadExcluded();
-    const total = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const total = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
     if (!total) return { sector: {} };
     const sector = {};
     for (const h of holdings) {
       if (excluded.has(h.ticker)) continue;
-      const w = (h.units * h.currentPrice) / total;
+      const w = toBase(h.units * h.currentPrice, h.currency) / total;
       const sectorData = h.sectorWeightings || (h.sector ? { [h.sector]: 100 } : null);
       if (sectorData) {
         for (const [k, pct] of Object.entries(sectorData))
@@ -758,7 +1096,7 @@
     };
   }
 
-  function lookthroughToGroups(obj, threshold = 0.5) {
+  function lookthroughToGroups(obj, threshold = 2) {
     let other = 0;
     const groups = [];
     for (const [name, pct] of Object.entries(obj)) {
@@ -869,7 +1207,7 @@
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">
-          <span class="ticker" style="font-size:0.82rem">${h.ticker}</span>
+          <span class="ticker" style="font-size:0.82rem">${displayTicker(h.ticker)}</span>
           ${isExcluded ? '<span style="font-size:0.68rem;color:#484f58;border:1px solid #30363d;border-radius:20px;padding:1px 7px">excluded from charts</span>' : ''}
         </div>
         <div class="modal-name">${h.name}</div>
@@ -897,13 +1235,13 @@
   /* ── Top underlying holdings ── */
   function calcTopHoldings(holdings) {
     const excluded = loadExcluded();
-    const total    = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const total    = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
     if (!total) return [];
 
     const agg = {};
     for (const h of holdings) {
       if (excluded.has(h.ticker) || !h.topHoldings?.length) continue;
-      const w = (h.units * h.currentPrice) / total;
+      const w = toBase(h.units * h.currentPrice, h.currency) / total;
       for (const th of h.topHoldings) {
         const key = th.symbol || th.name;
         if (!agg[key]) agg[key] = { symbol: th.symbol, name: th.name, indirectPct: 0, directPct: 0 };
@@ -914,7 +1252,7 @@
     for (const h of holdings) {
       if (excluded.has(h.ticker) || h.quoteType !== 'EQUITY') continue;
       if (agg[h.ticker]) {
-        agg[h.ticker].directPct = (h.units * h.currentPrice) / total * 100;
+        agg[h.ticker].directPct = toBase(h.units * h.currentPrice, h.currency) / total * 100;
       }
     }
 
@@ -953,11 +1291,11 @@
   function showEtfOwnership(symbol, stockName) {
     const holdings = loadHoldings();
     const excluded  = loadExcluded();
-    const total     = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const total     = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
 
     const direct = holdings.find(h => h.ticker === symbol && h.quoteType === 'EQUITY');
     const directPct = (direct && total)
-      ? parseFloat(((direct.units * direct.currentPrice) / total * 100).toFixed(2))
+      ? parseFloat((toBase(direct.units * direct.currentPrice, direct.currency) / total * 100).toFixed(2))
       : 0;
 
     const owners = [];
@@ -965,7 +1303,7 @@
       if (!h.topHoldings?.length) continue;
       const match = h.topHoldings.find(th => th.symbol === symbol || th.name === stockName);
       if (!match) continue;
-      const etfWeight = total ? (h.units * h.currentPrice) / total : 0;
+      const etfWeight = total ? toBase(h.units * h.currentPrice, h.currency) / total : 0;
       owners.push({
         ticker:            h.ticker,
         name:              h.name,
@@ -1039,18 +1377,11 @@
   /* ── Sidebar ── */
   let editingTicker = null;
 
-  function fmtValue(v) {
-    if (v >= 1_000_000) return '$' + (v / 1_000_000).toFixed(2) + 'M';
-    if (v >= 1_000)     return '$' + (v / 1_000).toFixed(1) + 'k';
-    return '$' + v.toFixed(2);
-  }
-
   function renderSidebar(holdings) {
-    const list  = document.getElementById('sidebar-list');
-    const total = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
+    const list      = document.getElementById('sidebar-list');
+    const totalBase = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
 
-    document.getElementById('sidebar-total-value').textContent =
-      '$' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('sidebar-total-value').textContent = formatBase(totalBase);
 
     if (!holdings.length) {
       list.innerHTML = '<div class="sidebar-empty">No holdings yet.<br>Click <strong>+ Add Holding</strong> to get started.</div>';
@@ -1060,9 +1391,10 @@
     const excluded = loadExcluded();
 
     list.innerHTML = holdings.map(h => {
-      const value      = h.units * h.currentPrice;
-      const pct        = total ? ((value / total) * 100).toFixed(1) : '0.0';
-      const isExcluded = excluded.has(h.ticker);
+      const nativeValue = h.units * h.currentPrice;
+      const baseValue   = toBase(nativeValue, h.currency);
+      const pct         = totalBase ? ((baseValue / totalBase) * 100).toFixed(1) : '0.0';
+      const isExcluded  = excluded.has(h.ticker);
       const isEditing  = h.ticker === editingTicker;
 
       const badges = [];
@@ -1076,7 +1408,7 @@
               title="${isExcluded ? 'Include in charts' : 'Exclude from charts'}">
               ${isExcluded ? '○' : '●'}
             </button>
-            <span class="sidebar-ticker">${h.ticker}</span>
+            <span class="sidebar-ticker">${displayTicker(h.ticker)}</span>
             <div class="sidebar-item-actions">
               <button class="sidebar-btn sidebar-btn-edit" data-ticker="${h.ticker}" title="Edit units">edit</button>
               <button class="sidebar-btn sidebar-btn-del" data-ticker="${h.ticker}" title="Remove">×</button>
@@ -1092,7 +1424,7 @@
             </div>
           ` : `
             <div class="sidebar-item-bottom">
-              <span class="sidebar-value">${fmtValue(value)}</span>
+              <span class="sidebar-value">${fmtNative(nativeValue, h.currency)}</span>
               <span class="sidebar-pct">${pct}%</span>
             </div>
           `}
@@ -1146,9 +1478,12 @@
   function renderDashboard() {
     const holdings = loadHoldings();
 
-    const total = holdings.reduce((s, h) => s + h.units * h.currentPrice, 0);
-    document.getElementById('total-value').textContent =
-      '$' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Sync the base currency selector to current state
+    const sel = document.getElementById('base-currency-select');
+    if (sel) sel.value = baseCurrency;
+
+    const totalBase = holdings.reduce((s, h) => s + toBase(h.units * h.currentPrice, h.currency), 0);
+    document.getElementById('total-value').textContent = formatBase(totalBase);
     document.getElementById('total-holdings').textContent = holdings.length;
 
     const ts = localStorage.getItem('xray-last-updated');
@@ -1166,6 +1501,17 @@
     renderChart('assetChart',      assetGroups);  renderLegend('asset-legend',       assetGroups);
     renderChart('trueSectorChart', sectorGroups); renderLegend('true-sector-legend', sectorGroups);
 
+    const currencyGroups  = calcCurrencyBreakdown(holdings);
+    const currencyCard    = document.getElementById('currency-chart-card');
+    if (currencyGroups.length > 1) {
+      currencyCard.style.display = 'block';
+      renderChart('currencyChart', currencyGroups);
+      renderLegend('currency-legend', currencyGroups);
+    } else {
+      currencyCard.style.display = 'none';
+      if (charts['currencyChart']) { charts['currencyChart'].destroy(); delete charts['currencyChart']; }
+    }
+
     renderTopHoldings(calcTopHoldings(holdings));
 
     const excluded     = loadExcluded();
@@ -1176,13 +1522,13 @@
     const excludedSec  = document.getElementById('user-excluded-section');
 
     if (limitedOnly.length) {
-      document.getElementById('limited-data-tickers').textContent = limitedOnly.map(h => h.ticker).join(', ');
+      document.getElementById('limited-data-tickers').textContent = limitedOnly.map(h => displayTicker(h.ticker)).join(', ');
       limitedSec.style.display = 'block';
     } else {
       limitedSec.style.display = 'none';
     }
     if (userExcluded.length) {
-      document.getElementById('user-excluded-tickers').textContent = userExcluded.map(h => h.ticker).join(', ');
+      document.getElementById('user-excluded-tickers').textContent = userExcluded.map(h => displayTicker(h.ticker)).join(', ');
       excludedSec.style.display = 'block';
     } else {
       excludedSec.style.display = 'none';
@@ -1315,6 +1661,9 @@
       saveHoldings(holdings);
       addBtn.textContent = 'Add to Portfolio';
       closeAddPanel();
+      // Invalidate FX cache so new currency gets a fresh rate
+      localStorage.removeItem('xray-fx-timestamp');
+      await refreshFxRates();
       renderDashboard();
     } catch (err) {
       showError(err.message);
@@ -1332,7 +1681,7 @@
     addCashBtn.disabled = !cashAmountInput.value || parseFloat(cashAmountInput.value) <= 0;
   });
 
-  addCashBtn.addEventListener('click', () => {
+  addCashBtn.addEventListener('click', async () => {
     const amount   = parseFloat(cashAmountInput.value);
     const currency = cashCurrency.value;
     if (!amount || amount <= 0) return;
@@ -1360,6 +1709,8 @@
     cashAmountInput.value = '';
     addCashBtn.disabled   = true;
     closeAddPanel();
+    localStorage.removeItem('xray-fx-timestamp');
+    await refreshFxRates();
     renderDashboard();
   });
 
@@ -1398,8 +1749,46 @@
   document.getElementById('info-modal-close').addEventListener('click', () => infoOverlay.style.display = 'none');
   infoOverlay.addEventListener('click', e => { if (e.target === e.currentTarget) infoOverlay.style.display = 'none'; });
 
+  /* ── Base currency selector ── */
+  document.getElementById('base-currency-select').addEventListener('change', async e => {
+    baseCurrency = e.target.value;
+    localStorage.setItem('xray-base-currency', baseCurrency);
+    // Refresh FX rates if the new base currency isn't already in cache
+    if (!fxRates[baseCurrency]) {
+      localStorage.removeItem('xray-fx-timestamp');
+      await refreshFxRates();
+    }
+    renderDashboard();
+  });
+
+  /* ── Mobile sidebar ── */
+  const sidebar         = document.querySelector('.sidebar');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const menuBtn         = document.getElementById('menu-btn');
+
+  function openMobileSidebar() {
+    sidebar.classList.add('mobile-open');
+    sidebarBackdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileSidebar() {
+    sidebar.classList.remove('mobile-open');
+    sidebarBackdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', openMobileSidebar);
+  sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+
+  /* Close sidebar when add panel opens on mobile */
+  document.getElementById('add-holding-btn').addEventListener('click', closeMobileSidebar);
+
   /* ── Init ── */
-  renderDashboard();
+  (async () => {
+    await refreshFxRates();
+    renderDashboard();
+  })();
 </script>
 </body>
 </html>

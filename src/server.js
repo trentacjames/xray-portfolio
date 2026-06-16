@@ -55,11 +55,17 @@ app.get('/api/price/:ticker', async (req, res) => {
   console.log(`[${new Date().toISOString()}] GET /api/price/${ticker}`);
   try {
     const quote = await yahooFinance.quote(ticker);
+
+    // Yahoo quotes JSE securities in cents (ZAc) — normalise to Rand
+    let price    = quote.regularMarketPrice;
+    let currency = quote.currency || 'USD';
+    if (currency === 'ZAc') { price = price / 100; currency = 'ZAR'; }
+
     const result = {
       ticker:    quote.symbol,
       name:      quote.longName || quote.shortName || ticker,
-      price:     quote.regularMarketPrice,
-      currency:  quote.currency || 'USD',
+      price,
+      currency,
       quoteType: quote.quoteType,
     };
 
@@ -111,6 +117,22 @@ app.get('/api/refresh', async (req, res) => {
     console.error('Refresh failed:', err.message);
     res.status(500).json({ error: 'Refresh failed', detail: err.message });
   }
+});
+
+app.get('/api/fx', async (req, res) => {
+  const requested = (req.query.currencies || '').split(',').map(s => s.trim()).filter(Boolean);
+  const toFetch   = [...new Set(requested.filter(c => c && c !== 'USD'))];
+  const rates     = { USD: 1 };
+  console.log(`[${new Date().toISOString()}] GET /api/fx?currencies=${requested.join(',')}`);
+  await Promise.all(toFetch.map(async currency => {
+    try {
+      const quote = await yahooFinance.quote(`${currency}USD=X`);
+      rates[currency] = quote.regularMarketPrice;
+    } catch (e) {
+      console.warn(`FX unavailable for ${currency}:`, e.message);
+    }
+  }));
+  res.json(rates);
 });
 
 app.get('/api/status', (req, res) => {
