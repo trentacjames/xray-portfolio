@@ -316,6 +316,19 @@
     .top-hold-bar { width: 96px; flex-shrink: 0; height: 4px; background: #21262d; border-radius: 2px; overflow: hidden; }
     .top-hold-bar-fill { height: 100%; background: #3fb950; border-radius: 2px; }
     .top-hold-pct { font-size: 0.8rem; color: #c9d1d9; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+    .top-hold-chevron { color: #30363d; font-size: 1rem; flex-shrink: 0; transition: color 0.1s; }
+    .top-hold-row:hover .top-hold-chevron { color: #8b949e; }
+
+    /* Demo banner */
+    .demo-banner {
+      background: #161b22; border: 1px solid #9e6a03; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .demo-banner-label { font-size: 0.72rem; font-weight: 600; color: #d29922; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+    .demo-banner-body  { font-size: 0.82rem; color: #8b949e; line-height: 1.4; }
+    .btn-demo-clear { flex-shrink: 0; border-color: #9e6a03 !important; color: #d29922 !important; }
+    .btn-demo-clear:hover { border-color: #d29922 !important; color: #e6c060 !important; }
 
     /* Exclusions notice */
     #limited-data-notice {
@@ -478,7 +491,7 @@
 
     /* ── Mobile ── */
     @media (max-width: 768px) {
-      body { height: auto; overflow-y: auto; }
+      body { min-height: 100dvh; height: auto; overflow-y: auto; }
 
       .btn-menu { display: flex; }
 
@@ -498,19 +511,25 @@
         box-shadow: 8px 0 32px rgba(0,0,0,0.45);
       }
 
-      .main-content { overflow: visible; padding: 14px 16px; }
+      .main-content {
+        overflow: visible;
+        padding: 14px 16px;
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      }
 
       .stats-bar { flex-wrap: wrap; gap: 8px; }
       .stat-chip { flex: 1 1 calc(50% - 4px); min-width: 0; padding: 12px 14px; }
       .stat-chip-value { font-size: 1.15rem; }
 
       .charts { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
-      .chart-card { padding: 18px; }
+      .chart-card { padding: 16px 18px; }
+      .chart-canvas-wrap { width: 120px; height: 120px; }
       .base-currency-select { font-size: 0.72rem; padding: 3px 8px; }
 
       .table-card-header { padding: 12px 16px; }
       .top-hold-row { padding: 9px 16px; }
       .top-hold-bar { width: 60px; }
+      .top-hold-chevron { display: none; }
 
       #limited-data-notice { padding: 10px 14px; }
     }
@@ -522,7 +541,10 @@
       .stat-chip-value { font-size: 1.05rem; }
 
       .chart-wrapper { gap: 14px; }
-      .chart-canvas-wrap { width: 130px; height: 130px; }
+      .chart-canvas-wrap { width: 110px; height: 110px; }
+
+      .demo-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .btn-demo-clear { width: 100%; text-align: center; }
 
       #add-panel-overlay { align-items: flex-end; padding: 0; }
       #add-panel {
@@ -577,6 +599,17 @@
 
   <!-- ── Main content ── -->
   <div class="main-content">
+
+    <!-- Demo banner -->
+    <div id="demo-banner" style="display:none">
+      <div class="demo-banner">
+        <div>
+          <div class="demo-banner-label">Demo Portfolio</div>
+          <div class="demo-banner-body">Explore the app with sample data. When you're ready, start tracking your own portfolio.</div>
+        </div>
+        <button id="clear-demo-btn" class="btn-ghost btn-demo-clear">Start my own →</button>
+      </div>
+    </div>
 
     <!-- Stats bar -->
     <div class="stats-bar">
@@ -657,7 +690,7 @@
     <div class="table-card" id="top-holdings-card" style="display:none">
       <div class="table-card-header">
         <h2>Top Underlying Holdings</h2>
-        <span style="font-size:0.72rem; color:#484f58">via ETF look-through</span>
+        <span style="font-size:0.72rem; color:#484f58">via ETF look-through &nbsp;·&nbsp; click any row to explore</span>
       </div>
       <div id="top-holdings-container"></div>
     </div>
@@ -973,6 +1006,137 @@
 
   };
 
+  /* ── Demo portfolio (loaded on first visit when no holdings exist) ── */
+  const DEMO_HOLDINGS = [
+
+    /* ── Core ETFs ─────────────────────────────────────────────────── */
+    {
+      ticker: 'VT', name: 'Vanguard Total World Stock ETF',
+      units: 200, currentPrice: 118.40, currency: 'USD',
+      account: 'Demo', quoteType: 'ETF',
+      sectorWeightings: {
+        'Technology': 25.5, 'Financials': 16.2, 'Industrials': 11.8,
+        'Healthcare': 10.5, 'Consumer Discretionary': 9.8, 'Communications': 7.8,
+        'Consumer Staples': 5.2, 'Materials': 3.8, 'Energy': 3.5,
+        'Real Estate': 2.5, 'Utilities': 2.4,
+      },
+      topHoldings: [
+        { symbol: 'AAPL',  name: 'Apple Inc',                       pct: 3.82 },
+        { symbol: 'MSFT',  name: 'Microsoft Corp',                  pct: 3.41 },
+        { symbol: 'NVDA',  name: 'Nvidia Corp',                     pct: 3.28 },
+        { symbol: 'AMZN',  name: 'Amazon.com Inc',                  pct: 2.34 },
+        { symbol: 'GOOGL', name: 'Alphabet Inc Class A',            pct: 2.01 },
+        { symbol: 'META',  name: 'Meta Platforms Inc',              pct: 1.78 },
+        { symbol: 'TSM',   name: 'Taiwan Semiconductor Mfg Co',     pct: 1.62 },
+        { symbol: 'AVGO',  name: 'Broadcom Inc',                    pct: 1.48 },
+        { symbol: 'GOOG',  name: 'Alphabet Inc Class C',            pct: 1.44 },
+        { symbol: 'BRK-B', name: 'Berkshire Hathaway Class B',      pct: 1.20 },
+      ],
+    },
+    {
+      ticker: 'VOO', name: 'Vanguard S&P 500 ETF',
+      units: 20, currentPrice: 548.60, currency: 'USD',
+      account: 'Demo', quoteType: 'ETF',
+      sectorWeightings: {
+        'Technology': 32.8, 'Communications': 8.9, 'Financials': 13.4,
+        'Healthcare': 11.5, 'Consumer Discretionary': 10.2, 'Industrials': 8.7,
+        'Consumer Staples': 5.0, 'Energy': 3.7, 'Utilities': 2.3,
+        'Materials': 2.1, 'Real Estate': 1.4,
+      },
+      topHoldings: [
+        { symbol: 'AAPL',  name: 'Apple Inc',                       pct: 7.21 },
+        { symbol: 'MSFT',  name: 'Microsoft Corp',                  pct: 6.43 },
+        { symbol: 'NVDA',  name: 'Nvidia Corp',                     pct: 6.12 },
+        { symbol: 'AMZN',  name: 'Amazon.com Inc',                  pct: 4.18 },
+        { symbol: 'GOOGL', name: 'Alphabet Inc Class A',            pct: 3.58 },
+        { symbol: 'META',  name: 'Meta Platforms Inc',              pct: 2.74 },
+        { symbol: 'BRK-B', name: 'Berkshire Hathaway Class B',      pct: 2.15 },
+        { symbol: 'AVGO',  name: 'Broadcom Inc',                    pct: 2.08 },
+        { symbol: 'TSLA',  name: 'Tesla Inc',                       pct: 1.93 },
+        { symbol: 'GOOG',  name: 'Alphabet Inc Class C',            pct: 1.82 },
+      ],
+    },
+    {
+      ticker: 'IEMG', name: 'iShares Core MSCI Emerging Markets ETF',
+      units: 150, currentPrice: 54.20, currency: 'USD',
+      account: 'Demo', quoteType: 'ETF',
+      sectorWeightings: {
+        'Technology': 24.8, 'Financials': 22.3, 'Consumer Discretionary': 13.1,
+        'Communications': 7.5, 'Materials': 7.8, 'Industrials': 7.2,
+        'Energy': 5.1, 'Healthcare': 4.0, 'Consumer Staples': 3.8,
+        'Utilities': 2.3, 'Real Estate': 2.1,
+      },
+      topHoldings: [
+        { symbol: 'TSM',          name: 'Taiwan Semiconductor Mfg Co', pct: 10.84 },
+        { symbol: '005930.KS',    name: 'Samsung Electronics',          pct:  3.82 },
+        { symbol: 'TCEHY',        name: 'Tencent Holdings',             pct:  3.46 },
+        { symbol: 'BABA',         name: 'Alibaba Group Holding',        pct:  2.18 },
+        { symbol: 'RELIANCE.NS',  name: 'Reliance Industries',          pct:  1.74 },
+        { symbol: '000660.KS',    name: 'SK Hynix Inc',                 pct:  1.62 },
+        { symbol: 'HDFCBANK.NS',  name: 'HDFC Bank Ltd',                pct:  1.54 },
+        { symbol: '3690.HK',      name: 'Meituan',                      pct:  1.08 },
+        { symbol: '2454.TW',      name: 'MediaTek Inc',                 pct:  0.96 },
+        { symbol: 'JD',           name: 'JD.com Inc',                   pct:  0.88 },
+      ],
+    },
+    {
+      ticker: 'VDC', name: 'Vanguard Consumer Staples ETF',
+      units: 30, currentPrice: 198.40, currency: 'USD',
+      account: 'Demo', quoteType: 'ETF',
+      sectorWeightings: { 'Consumer Staples': 100.0 },
+      topHoldings: [
+        { symbol: 'PG',   name: 'Procter & Gamble Co',         pct: 14.82 },
+        { symbol: 'COST', name: 'Costco Wholesale Corp',        pct: 13.64 },
+        { symbol: 'KO',   name: 'Coca-Cola Co',                 pct: 10.08 },
+        { symbol: 'PEP',  name: 'PepsiCo Inc',                  pct:  8.42 },
+        { symbol: 'PM',   name: 'Philip Morris International',  pct:  6.32 },
+        { symbol: 'WMT',  name: 'Walmart Inc',                  pct:  5.84 },
+        { symbol: 'MDLZ', name: 'Mondelez International',       pct:  4.48 },
+        { symbol: 'MO',   name: 'Altria Group Inc',             pct:  3.94 },
+        { symbol: 'CL',   name: 'Colgate-Palmolive Co',         pct:  3.62 },
+        { symbol: 'KMB',  name: 'Kimberly-Clark Corp',          pct:  2.86 },
+      ],
+    },
+    {
+      ticker: 'STXNDQ.JO', name: 'Satrix Nasdaq 100 Feeder ETF',
+      units: 4000, currentPrice: 7.82, currency: 'ZAR',
+      account: 'Demo', quoteType: 'ETF',
+      /* sector + holdings auto-applied from FALLBACK_ETF_DATA */
+    },
+
+    /* ── Individual stocks ──────────────────────────────────────────── */
+    {
+      ticker: 'AAPL', name: 'Apple Inc',
+      units: 20, currentPrice: 208.50, currency: 'USD',
+      account: 'Demo', quoteType: 'EQUITY',
+      sector: 'Technology', country: 'United States',
+    },
+    {
+      ticker: 'NVDA', name: 'Nvidia Corp',
+      units: 20, currentPrice: 131.00, currency: 'USD',
+      account: 'Demo', quoteType: 'EQUITY',
+      sector: 'Technology', country: 'United States',
+    },
+    {
+      ticker: 'TSM', name: 'Taiwan Semiconductor Manufacturing',
+      units: 15, currentPrice: 195.80, currency: 'USD',
+      account: 'Demo', quoteType: 'EQUITY',
+      sector: 'Technology', country: 'Taiwan',
+    },
+
+    /* ── Cash ───────────────────────────────────────────────────────── */
+    {
+      ticker: 'CASH_USD', name: 'Cash (USD)',
+      units: 8500, currentPrice: 1, currency: 'USD',
+      account: 'Demo', quoteType: 'CASH',
+    },
+    {
+      ticker: 'CASH_ZAR', name: 'Cash (ZAR)',
+      units: 80000, currentPrice: 1, currency: 'ZAR',
+      account: 'Demo', quoteType: 'CASH',
+    },
+  ];
+
   /* ── localStorage ── */
   function loadHoldings() {
     try {
@@ -1281,6 +1445,7 @@
           <div class="top-hold-bar-fill" style="width:${max ? (item.totalPct / max * 100) : 0}%"></div>
         </div>
         <span class="top-hold-pct">${item.totalPct}%</span>
+        <span class="top-hold-chevron">›</span>
       </div>
     `).join('');
     container.querySelectorAll('.top-hold-row').forEach(row =>
@@ -1477,6 +1642,9 @@
   /* ── Dashboard render ── */
   function renderDashboard() {
     const holdings = loadHoldings();
+
+    document.getElementById('demo-banner').style.display =
+      localStorage.getItem('xray-is-demo') === 'true' ? 'block' : 'none';
 
     // Sync the base currency selector to current state
     const sel = document.getElementById('base-currency-select');
@@ -1715,12 +1883,22 @@
   });
 
   /* ── Clear & Export ── */
+  document.getElementById('clear-demo-btn').addEventListener('click', () => {
+    localStorage.removeItem('xray-holdings');
+    localStorage.removeItem('xray-last-updated');
+    localStorage.removeItem('xray-excluded');
+    localStorage.removeItem('xray-is-demo');
+    editingTicker = null;
+    renderDashboard();
+  });
+
   document.getElementById('clear-btn').addEventListener('click', () => {
     if (!loadHoldings().length) return;
     if (confirm('Clear all holdings? This cannot be undone.')) {
       localStorage.removeItem('xray-holdings');
       localStorage.removeItem('xray-last-updated');
       localStorage.removeItem('xray-excluded');
+      localStorage.removeItem('xray-is-demo');
       editingTicker = null;
       renderDashboard();
     }
@@ -1786,6 +1964,12 @@
 
   /* ── Init ── */
   (async () => {
+    const stored = JSON.parse(localStorage.getItem('xray-holdings') || '[]');
+    if (!stored.length) {
+      localStorage.setItem('xray-holdings', JSON.stringify(DEMO_HOLDINGS));
+      localStorage.setItem('xray-is-demo', 'true');
+      localStorage.setItem('xray-last-updated', new Date().toISOString());
+    }
     await refreshFxRates();
     renderDashboard();
   })();
