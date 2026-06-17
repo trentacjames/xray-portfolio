@@ -1969,13 +1969,17 @@
   document.getElementById('add-holding-btn').addEventListener('click', closeMobileSidebar);
 
   /* ── Init ── */
+  const DEMO_VERSION = '3'; // increment whenever DEMO_HOLDINGS changes
+
   (async () => {
-    const stored = JSON.parse(localStorage.getItem('xray-holdings') || '[]');
-    const isDemo = localStorage.getItem('xray-is-demo') === 'true';
-    // Seed (or refresh) demo data whenever the user hasn't yet started their own portfolio
-    if (!stored.length || isDemo) {
+    const stored      = JSON.parse(localStorage.getItem('xray-holdings') || '[]');
+    const isDemo      = localStorage.getItem('xray-is-demo') === 'true';
+    const demoVersion = localStorage.getItem('xray-demo-version');
+    // Seed demo if: no holdings at all, OR still in demo mode with a stale version
+    if (!stored.length || (isDemo && demoVersion !== DEMO_VERSION)) {
       localStorage.setItem('xray-holdings', JSON.stringify(DEMO_HOLDINGS));
       localStorage.setItem('xray-is-demo', 'true');
+      localStorage.setItem('xray-demo-version', DEMO_VERSION);
       localStorage.setItem('xray-last-updated', new Date().toISOString());
     }
     await refreshFxRates();
