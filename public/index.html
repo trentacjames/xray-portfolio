@@ -1488,37 +1488,50 @@
     const totalPct    = parseFloat((directPct + indirectPct).toFixed(2));
 
     const ownerRows = owners.map(o => `
-      <div style="padding:14px 0; border-bottom:1px solid #21262d">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span class="ticker" style="font-size:0.82rem">${o.ticker}</span>
-          <span style="font-size:0.85rem;color:#c9d1d9">${o.name}</span>
-          ${o.isExcluded ? '<span style="font-size:0.65rem;color:#484f58;border:1px solid #30363d;border-radius:20px;padding:1px 6px;margin-left:auto">excluded</span>' : ''}
+      <div style="padding:12px 14px;background:#0d1117;border:1px solid #21262d;border-left:3px solid #1f6feb;border-radius:8px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="ticker" style="font-size:0.78rem">${displayTicker(o.ticker)}</span>
+          <span style="font-size:0.85rem;color:#c9d1d9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.name}</span>
+          ${o.isExcluded ? '<span style="font-size:0.63rem;color:#484f58;border:1px solid #30363d;border-radius:20px;padding:1px 6px;margin-left:auto;flex-shrink:0">excluded</span>' : ''}
         </div>
-        <div style="display:flex;gap:28px">
+        <div style="display:flex;gap:24px">
           <div>
-            <div style="font-size:0.65rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px">% of ETF</div>
-            <div style="font-size:0.9rem;color:#e6edf3;font-weight:500">${o.pctOfEtf}%</div>
+            <div class="modal-stat-label">% of ETF</div>
+            <div class="modal-stat-value">${o.pctOfEtf}%</div>
           </div>
           <div>
-            <div style="font-size:0.65rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px">Portfolio exposure</div>
-            <div style="font-size:0.9rem;color:#e6edf3;font-weight:500">${o.portfolioExposure}%</div>
+            <div class="modal-stat-label">% of Portfolio</div>
+            <div class="modal-stat-value" style="color:#58a6ff">${o.portfolioExposure}%</div>
           </div>
         </div>
       </div>
     `).join('');
 
+    const directRow = direct ? `
+      <div style="padding:12px 14px;background:#0d1117;border:1px solid #21262d;border-left:3px solid #3fb950;border-radius:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="ticker" style="font-size:0.78rem">${displayTicker(symbol || direct.ticker)}</span>
+          <span style="font-size:0.85rem;color:#c9d1d9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${direct.name || stockName || symbol}</span>
+        </div>
+        <div>
+          <div class="modal-stat-label">% of Portfolio</div>
+          <div class="modal-stat-value" style="color:#3fb950">${directPct}%</div>
+        </div>
+      </div>
+    ` : '<div style="color:#484f58;font-size:0.85rem">No direct holding</div>';
+
     const exposureSummary = `
-      <div style="margin-top:16px;padding:14px 16px;background:#0d1117;border-radius:8px;border:1px solid #21262d">
+      <div style="margin-top:18px;padding:14px 16px;background:#0d1117;border-radius:8px;border:1px solid #21262d">
         <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-          <span style="font-size:0.75rem;color:#8b949e">Direct holding</span>
-          <span style="font-size:0.88rem;color:${directPct > 0 ? '#e6edf3' : '#484f58'};font-weight:500">${directPct > 0 ? directPct + '%' : '—'}</span>
+          <span style="font-size:0.75rem;color:#8b949e">Direct Holding</span>
+          <span style="font-size:0.88rem;color:${directPct > 0 ? '#3fb950' : '#484f58'};font-weight:500">${directPct > 0 ? directPct + '%' : '—'}</span>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-size:0.75rem;color:#8b949e">Indirect (via ETFs)</span>
-          <span style="font-size:0.88rem;color:#e6edf3;font-weight:500">${indirectPct}%</span>
+          <span style="font-size:0.75rem;color:#8b949e">Indirect Holding</span>
+          <span style="font-size:0.88rem;color:#58a6ff;font-weight:500">${indirectPct}%</span>
         </div>
         <div style="border-top:1px solid #21262d;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:0.72rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.07em">Total estimated exposure</span>
+          <span style="font-size:0.72rem;color:#8b949e;text-transform:uppercase;letter-spacing:0.07em">Total Estimated Exposure</span>
           <span style="font-size:1.15rem;font-weight:600;color:#3fb950">${totalPct}%</span>
         </div>
       </div>
@@ -1528,17 +1541,20 @@
 
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-header">
-        <div style="font-size:0.72rem;color:#484f58;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em">
-          Held through ${owners.length} ETF${owners.length !== 1 ? 's' : ''} in your portfolio
-        </div>
         <div class="modal-name">${stockName || symbol}</div>
         ${symbol ? `<span class="ticker" style="font-size:0.78rem;margin-top:3px;display:inline-block">${symbol}</span>` : ''}
       </div>
       <div class="modal-body">
-        ${owners.length
-          ? ownerRows + exposureSummary
-          : '<div style="color:#484f58;font-size:0.85rem">No ETFs in your portfolio hold this stock.</div>'
-        }
+        <div style="font-size:0.95rem;font-weight:600;color:#e6edf3;margin-bottom:16px">You hold the stock through:</div>
+        <div class="modal-section" style="margin-top:0;padding-top:0;border-top:none">
+          <div class="modal-section-title">Indirect Holding (via ETFs)</div>
+          ${owners.length ? ownerRows : '<div style="color:#484f58;font-size:0.85rem">No indirect holding</div>'}
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Direct Holding</div>
+          ${directRow}
+        </div>
+        ${exposureSummary}
       </div>
     `;
 
