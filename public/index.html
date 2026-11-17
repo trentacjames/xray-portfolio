@@ -257,6 +257,17 @@
     }
     .base-currency-select:focus { border-color: #58a6ff; }
 
+    .price-refresh-btn {
+      background: none; border: 1px solid #30363d; border-radius: 4px;
+      color: #8b949e; font-size: 0.75rem; line-height: 1; padding: 2px 6px;
+      cursor: pointer; transition: color 0.15s, border-color 0.15s;
+    }
+    .price-refresh-btn:hover:not(:disabled) { color: #58a6ff; border-color: #58a6ff; }
+    .price-refresh-btn:disabled { cursor: default; opacity: 0.5; }
+    .price-status { font-size: 0.7rem; color: #8b949e; margin-top: 3px; min-height: 1em; }
+    .price-status.warn { color: #d29922; }
+    .sidebar-badge.stale { color: #d29922; }
+
     .fx-loading {
       font-size: 0.65rem; color: #484f58; margin-left: 6px;
     }
@@ -633,8 +644,12 @@
         <div class="stat-chip-value" id="total-holdings">0</div>
       </div>
       <div class="stat-chip">
-        <div class="stat-chip-label">Last Updated</div>
+        <div class="stat-chip-label">
+          Prices as of
+          <button id="price-refresh-btn" class="price-refresh-btn" title="Refresh prices now" aria-label="Refresh prices now">&#8635;</button>
+        </div>
         <div class="stat-chip-value" id="last-updated" style="font-size:0.95rem">—</div>
+        <div class="price-status" id="price-status"></div>
       </div>
     </div>
 
@@ -854,7 +869,7 @@
     return sym + amount.toFixed(2);
   }
 
-  async function refreshFxRates() {
+  async function refreshFxRates(force = false) {
     const holdings   = loadHoldings();
     const currencies = [...new Set(holdings.map(h => h.currency).filter(Boolean))];
     const foreign    = currencies.filter(c => c && c !== 'USD');
@@ -864,7 +879,7 @@
     // Use localStorage cache (30 min TTL)
     const cached    = localStorage.getItem('xray-fx-rates');
     const cacheTime = parseInt(localStorage.getItem('xray-fx-timestamp') || '0');
-    if (cached && Date.now() - cacheTime < 30 * 60 * 1000) {
+    if (!force && cached && Date.now() - cacheTime < 30 * 60 * 1000) {
       fxRates = JSON.parse(cached);
       return;
     }
@@ -1142,6 +1157,110 @@
       account: 'Demo', quoteType: 'CASH',
     },
   ];
+
+  /* ── Live price refresh ──
+   * Draw with saved prices first, then fetch fresh ones in one batch call.
+   * Cached for 30 minutes (like FX). Tickers Yahoo can't price keep their
+   * saved price and get a "stale price" badge once it's over a day old. */
+  const PRICE_TTL_MS   = 30 * 60 * 1000;
+  const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+  let priceRefreshInFlight = null;   // shared promise, so clicks don't stack requests
+  let priceRefreshing      = false;
+  let priceRefreshFailed   = false;
+
+  function isPriceStale(h) {
+    if (h.quoteType === 'CASH') return false;
+    // Holdings saved before timestamps existed: only flag once a refresh has been tried
+    if (!h.priceUpdatedAt) return !!localStorage.getItem('xray-prices-timestamp');
+    return Date.now() - new Date(h.priceUpdatedAt).getTime() > STALE_AFTER_MS;
+  }
+
+  function staleTitle(h) {
+    return h.priceUpdatedAt
+      ? `Last priced ${fmtDateTime(h.priceUpdatedAt)}; live price unavailable`
+      : 'Live price unavailable';
+  }
+
+  function fmtDateTime(iso) {
+    const d = new Date(iso);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return sameDay ? time
+      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + time;
+  }
+
+  function renderPriceStatus(holdings) {
+    const priced = holdings.filter(h => h.quoteType !== 'CASH');
+    const stamps = priced.map(h => h.priceUpdatedAt).filter(Boolean).sort();
+    const valueEl  = document.getElementById('last-updated');
+    const statusEl = document.getElementById('price-status');
+    const btn      = document.getElementById('price-refresh-btn');
+
+    // Show the OLDEST price time, so the label never overstates freshness
+    valueEl.textContent = !priced.length ? '—'
+      : stamps.length ? fmtDateTime(stamps[0]) : 'Not yet refreshed';
+
+    const staleCount = priced.filter(isPriceStale).length;
+    statusEl.classList.remove('warn');
+    if (priceRefreshing) {
+      statusEl.textContent = 'Updating prices…';
+    } else if (priceRefreshFailed) {
+      statusEl.textContent = 'Refresh failed, showing saved prices';
+      statusEl.classList.add('warn');
+    } else if (staleCount) {
+      statusEl.textContent = `${staleCount} stale price${staleCount > 1 ? 's' : ''}`;
+      statusEl.classList.add('warn');
+    } else {
+      statusEl.textContent = '';
+    }
+    btn.disabled = priceRefreshing || !priced.length;
+  }
+
+  async function refreshPrices(force = false) {
+    if (priceRefreshInFlight) return priceRefreshInFlight;
+    const last = parseInt(localStorage.getItem('xray-prices-timestamp') || '0');
+    if (!force && Date.now() - last < PRICE_TTL_MS) return false;
+
+    const tickers = [...new Set(loadHoldings()
+      .filter(h => h.quoteType !== 'CASH').map(h => h.ticker))];
+    if (!tickers.length) return false;
+
+    priceRefreshing = true;
+    renderPriceStatus(loadHoldings());
+    priceRefreshInFlight = (async () => {
+      try {
+        const res = await fetch(`/api/prices?tickers=${encodeURIComponent(tickers.join(','))}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { prices, asOf } = await res.json();
+
+        // Re-read holdings: the user may have edited them while the request was out
+        const holdings = loadHoldings();
+        for (const h of holdings) {
+          const p = prices[h.ticker];
+          if (!p || !(p.price > 0)) continue;
+          // Currency mismatch means a different listing; keep the saved price rather than mix units
+          if (p.currency !== h.currency) {
+            console.warn(`Price currency mismatch for ${h.ticker}: ${p.currency} vs ${h.currency}`);
+            continue;
+          }
+          h.currentPrice   = p.price;
+          h.priceUpdatedAt = asOf;
+        }
+        // Write directly: saveHoldings() would bump the "portfolio edited" time
+        localStorage.setItem('xray-holdings', JSON.stringify(holdings));
+        localStorage.setItem('xray-prices-timestamp', Date.now().toString());
+        priceRefreshFailed = false;
+        return true;
+      } catch (e) {
+        console.warn('Price refresh failed:', e.message);
+        priceRefreshFailed = true;
+        return false;
+      }
+    })();
+
+    try { return await priceRefreshInFlight; }
+    finally { priceRefreshInFlight = null; priceRefreshing = false; }
+  }
 
   /* ── localStorage ── */
   function loadHoldings() {
@@ -1587,6 +1706,7 @@
       const badges = [];
       if (hasLimitedData(h)) badges.push('limited data');
       if (h.quoteType === 'ETF' && !h.topHoldings?.length) badges.push('no holdings data');
+      const stale = isPriceStale(h);
 
       return `
         <div class="sidebar-item${isExcluded ? ' excluded' : ''}" data-ticker="${h.ticker}">
@@ -1615,7 +1735,7 @@
               <span class="sidebar-pct">${pct}%</span>
             </div>
           `}
-          ${badges.length ? `<div class="sidebar-badge-row"><span class="sidebar-badge">${badges.join(' · ')}</span></div>` : ''}
+          ${badges.length || stale ? `<div class="sidebar-badge-row">${badges.length ? `<span class="sidebar-badge">${badges.join(' · ')}</span>` : ''}${badges.length && stale ? '<span class="sidebar-badge"> · </span>' : ''}${stale ? `<span class="sidebar-badge stale" title="${staleTitle(h)}">stale price</span>` : ''}</div>` : ''}
         </div>
       `;
     }).join('');
@@ -1676,13 +1796,7 @@
     document.getElementById('total-value').textContent = formatBase(totalBase);
     document.getElementById('total-holdings').textContent = holdings.length;
 
-    const ts = localStorage.getItem('xray-last-updated');
-    if (ts) {
-      const d = new Date(ts);
-      document.getElementById('last-updated').textContent =
-        d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) +
-        ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    }
+    renderPriceStatus(holdings);
 
     const assetGroups  = calcBreakdown(holdings, 'assetClass');
     const { sector }   = calcLookthrough(holdings);
@@ -1838,13 +1952,15 @@
       if (existing) {
         existing.units = units;
         existing.currentPrice = price;
+        existing.priceUpdatedAt = new Date().toISOString();
         if (quoteType)        existing.quoteType        = quoteType;
         if (sector)           existing.sector           = sector;
         if (country)          existing.country          = country;
         if (sectorWeightings) existing.sectorWeightings = sectorWeightings;
         if (topHoldings)      existing.topHoldings      = topHoldings;
       } else {
-        holdings.push({ ticker, name, units, currentPrice: price, currency, account: 'Manual',
+        holdings.push({ ticker, name, units, currentPrice: price, priceUpdatedAt: new Date().toISOString(),
+          currency, account: 'Manual',
           quoteType, sector, country, sectorWeightings, topHoldings });
       }
 
@@ -1908,6 +2024,7 @@
   document.getElementById('clear-demo-btn').addEventListener('click', () => {
     localStorage.removeItem('xray-holdings');
     localStorage.removeItem('xray-last-updated');
+    localStorage.removeItem('xray-prices-timestamp');
     localStorage.removeItem('xray-excluded');
     localStorage.removeItem('xray-is-demo');
     editingTicker = null;
@@ -1919,6 +2036,7 @@
     if (confirm('Clear all holdings? This cannot be undone.')) {
       localStorage.removeItem('xray-holdings');
       localStorage.removeItem('xray-last-updated');
+      localStorage.removeItem('xray-prices-timestamp');
       localStorage.removeItem('xray-excluded');
       localStorage.removeItem('xray-is-demo');
       editingTicker = null;
@@ -1994,13 +2112,21 @@
     // Seed demo if: no holdings at all, OR still in demo mode with a stale version
     if (!stored.length || (isDemo && demoVersion !== DEMO_VERSION)) {
       localStorage.setItem('xray-holdings', JSON.stringify(DEMO_HOLDINGS));
+      localStorage.removeItem('xray-prices-timestamp'); // price the fresh demo straight away
       localStorage.setItem('xray-is-demo', 'true');
       localStorage.setItem('xray-demo-version', DEMO_VERSION);
       localStorage.setItem('xray-last-updated', new Date().toISOString());
     }
     await refreshFxRates();
+    renderDashboard();             // instant, with saved prices
+    await refreshPrices();         // no-op if refreshed in the last 30 min
     renderDashboard();
   })();
+
+  document.getElementById('price-refresh-btn').addEventListener('click', async () => {
+    await Promise.all([refreshPrices(true), refreshFxRates(true)]);
+    renderDashboard();
+  });
 </script>
 </body>
 </html>

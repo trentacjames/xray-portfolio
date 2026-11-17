@@ -1,12 +1,9 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const YahooFinance = require('yahoo-finance2').default;
-const fetchPrices = require('./fetchPrices');
 
 const app = express();
 const PORT = 3000;
-const holdingsPath = path.join(__dirname, '..', 'data', 'holdings.json');
 const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
 
 const SECTOR_NAME_MAP = {
@@ -23,7 +20,14 @@ const SECTOR_NAME_MAP = {
   utilities:              'Utilities',
 };
 
-let lastUpdated = fs.statSync(holdingsPath).mtime;
+// Yahoo quotes JSE securities in cents (ZAc) — normalise to Rand
+function normalisePrice(price, currency) {
+  if (currency === 'ZAc') return { price: price / 100, currency: 'ZAR' };
+  return { price, currency: currency || 'USD' };
+}
+
+const TICKER_RE   = /^[A-Za-z0-9.\-=^]{1,20}$/;
+const MAX_TICKERS = 50;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -56,10 +60,7 @@ app.get('/api/price/:ticker', async (req, res) => {
   try {
     const quote = await yahooFinance.quote(ticker);
 
-    // Yahoo quotes JSE securities in cents (ZAc) — normalise to Rand
-    let price    = quote.regularMarketPrice;
-    let currency = quote.currency || 'USD';
-    if (currency === 'ZAc') { price = price / 100; currency = 'ZAR'; }
+    const { price, currency } = normalisePrice(quote.regularMarketPrice, quote.currency);
 
     const result = {
       ticker:    quote.symbol,
@@ -107,15 +108,30 @@ app.get('/api/price/:ticker', async (req, res) => {
   }
 });
 
-app.get('/api/refresh', async (req, res) => {
-  console.log(`[${new Date().toISOString()}] GET /api/refresh`);
+// Batch price refresh: one Yahoo call for every saved holding.
+// Returns { prices: { TICKER: { price, currency } }, missing: [TICKER], asOf }
+app.get('/api/prices', async (req, res) => {
+  const tickers = [...new Set(
+    (req.query.tickers || '').split(',').map(s => s.trim()).filter(Boolean)
+  )];
+  if (!tickers.length) return res.json({ prices: {}, missing: [], asOf: new Date().toISOString() });
+  if (tickers.length > MAX_TICKERS || !tickers.every(t => TICKER_RE.test(t))) {
+    return res.status(400).json({ error: 'Invalid ticker list' });
+  }
+  console.log(`[${new Date().toISOString()}] GET /api/prices (${tickers.length} tickers)`);
   try {
-    await fetchPrices();
-    lastUpdated = new Date();
-    res.json({ ok: true, lastUpdated });
+    // validateResult:false so one odd quote can't fail the whole batch
+    const quotes = await yahooFinance.quote(tickers, { return: 'array' }, { validateResult: false });
+    const prices = {};
+    for (const q of Array.isArray(quotes) ? quotes : []) {
+      if (!q?.symbol || typeof q.regularMarketPrice !== 'number') continue;
+      prices[q.symbol] = normalisePrice(q.regularMarketPrice, q.currency);
+    }
+    const missing = tickers.filter(t => !prices[t]);
+    res.json({ prices, missing, asOf: new Date().toISOString() });
   } catch (err) {
-    console.error('Refresh failed:', err.message);
-    res.status(500).json({ error: 'Refresh failed', detail: err.message });
+    console.error('Batch price fetch failed:', err.message);
+    res.status(502).json({ error: 'Price refresh failed' });
   }
 });
 
@@ -133,10 +149,6 @@ app.get('/api/fx', async (req, res) => {
     }
   }));
   res.json(rates);
-});
-
-app.get('/api/status', (req, res) => {
-  res.json({ lastUpdated });
 });
 
 app.listen(PORT, () => {

@@ -15,6 +15,7 @@ Holding three or four ETFs feels diversified. Often it isn't: a global fund, a U
 ## Features
 
 - **Portfolio builder** — search for ETFs and individual stocks, enter units, and add cash in several currencies; your portfolio is saved in the browser (`localStorage`), so no account or login is needed
+- **Live prices** — every saved holding is re-priced in one batch call when the page loads (cached for 30 minutes, with a manual refresh button); any price Yahoo can't update is flagged as stale
 - **Look-through aggregation** — weights each fund's top holdings by your position size and combines them with your direct shareholdings into one view
 - **Trace any stock to its source** — click an underlying stock to see every route you own it through: which ETFs hold it, how much of each ETF it makes up, and your direct holding, summed into one total exposure
 - **ETF drill-down** — click any ETF to see its sector breakdown and top holdings
@@ -43,7 +44,7 @@ flowchart LR
 ```
 
 1. Your holdings live only in your browser. The server stores nothing about your portfolio.
-2. When you add a ticker, the Express API fetches its live price from Yahoo Finance. For ETFs it also fetches sector weights and the top 15 holdings.
+2. When you add a ticker, the Express API fetches its live price from Yahoo Finance. For ETFs it also fetches sector weights and the top 15 holdings. On each visit, the dashboard draws straight away with saved prices, then re-prices every holding in one batch request (`/api/prices`) and redraws.
 3. The browser scales each ETF's holdings by your position size, merges them with any shares you hold directly, and sums the result by asset class, sector and currency. It also records which ETFs each stock came from, which powers the "how do I own this?" breakdown.
 4. Chart.js renders the result.
 
@@ -93,6 +94,7 @@ Stated plainly, because they matter for how far the numbers can be trusted:
 
 ## Roadmap
 
+- [x] Live price refresh: re-fetch prices for all saved holdings on page load (cached ~30 min, like FX rates), so values don't stay frozen at the price when each holding was added; retire the legacy `/api/refresh` endpoint
 - [ ] Upload a broker statement or screenshot and auto-fill the portfolio (AI-assisted extraction with validation)
 - [ ] Overlap summary: a single table ranking the stocks you hold through the most routes
 - [ ] Unit tests for the aggregation logic
