@@ -433,6 +433,54 @@
     .cash-select:focus { border-color: #1f6feb; }
     .cash-row .units-input { flex: 1; }
 
+    /* ── Statement upload ── */
+    .btn-upload {
+      width: 100%; background: #0d1117; border: 1px dashed #30363d; color: #c9d1d9;
+      border-radius: 6px; padding: 10px 12px; font-size: 0.85rem; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s; margin-bottom: 4px;
+    }
+    .btn-upload:hover { border-color: #1f6feb; color: #e6edf3; }
+    #upload-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 210; padding: 24px;
+    }
+    #upload-panel {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      width: 100%; max-width: 880px; max-height: 92vh; overflow-y: auto; position: relative;
+    }
+    .up-field { margin-bottom: 14px; }
+    .up-label { display: block; font-size: 0.72rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+    .up-note { font-size: 0.78rem; color: #8b949e; line-height: 1.55; background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; }
+    .up-file { color: #c9d1d9; font-size: 0.85rem; }
+    .up-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+    .up-summary { font-size: 0.82rem; color: #c9d1d9; margin-bottom: 10px; line-height: 1.6; }
+    .up-warn-list { margin: 0 0 12px; padding: 10px 12px 10px 28px; background: #2d2208; border: 1px solid #9e6a03; border-radius: 6px; color: #e3b341; font-size: 0.78rem; line-height: 1.55; }
+    .up-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .up-table th { text-align: left; font-size: 0.66rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.07em; padding: 6px 6px; border-bottom: 1px solid #21262d; font-weight: 500; }
+    .up-table td { padding: 8px 6px; border-bottom: 1px solid #21262d; vertical-align: top; color: #c9d1d9; }
+    .up-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .up-table input[type=text], .up-table input[type=number], .up-table select {
+      background: #0d1117; border: 1px solid #30363d; border-radius: 5px; color: #e6edf3;
+      font-size: 0.8rem; padding: 5px 7px; width: 100%; min-width: 80px;
+    }
+    .up-table input:focus, .up-table select:focus { border-color: #1f6feb; outline: none; }
+    .up-row-warn { color: #e3b341; font-size: 0.72rem; margin-top: 4px; line-height: 1.45; }
+    .up-row-err { color: #f78166; font-size: 0.72rem; margin-top: 4px; line-height: 1.45; }
+    .up-badge { display: inline-block; font-size: 0.66rem; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+    .up-badge.ok { background: #0f2d1a; color: #3fb950; }
+    .up-badge.warn { background: #2d2208; color: #e3b341; }
+    .up-badge.needs_pick { background: #0c2d6b; color: #58a6ff; }
+    .up-badge.error { background: #3d1210; color: #f78166; }
+    .up-preview { font-size: 0.8rem; color: #c9d1d9; background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px 12px; margin-top: 14px; line-height: 1.6; }
+    .up-foot { font-size: 0.7rem; color: #484f58; margin-top: 10px; }
+    .up-spinner { color: #8b949e; font-size: 0.85rem; padding: 30px 0; text-align: center; }
+    @media (max-width: 768px) {
+      #upload-overlay { align-items: flex-end; padding: 0; }
+      #upload-panel { border-radius: 16px 16px 0 0; max-width: 100%; }
+      .up-table .hide-sm { display: none; }
+    }
+
     /* ── Info modal ── */
     #info-modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.65);
@@ -721,6 +769,8 @@
       <h2>Add Holding</h2>
     </div>
     <div class="add-panel-body">
+      <button id="open-upload-btn" class="btn-upload">&#8679; Upload a statement (PDF)</button>
+      <div class="builder-divider">or search</div>
       <div class="search-wrap">
         <input id="search-input" class="search-input" type="text"
           placeholder="Search by name or ticker e.g. AAPL, Vanguard..." autocomplete="off" />
@@ -749,6 +799,71 @@
   </div>
 </div>
 
+<!-- ── Statement upload panel ── -->
+<div id="upload-overlay" style="display:none">
+  <div id="upload-panel">
+    <button class="modal-close" id="upload-close">×</button>
+    <div class="add-panel-header"><h2 id="upload-title">Upload a statement</h2></div>
+    <div class="add-panel-body">
+
+      <div id="up-step-form">
+        <div class="up-note">
+          Your PDF is sent to the Xray server and to Anthropic's Claude AI to read the holdings.
+          It is not stored, and nothing is kept after the holdings are returned to your browser.
+          The AI sees everything printed on the statement, including your name.
+          Statement upload is invite-only for now, so you need an access code.
+        </div>
+        <div class="up-field">
+          <label class="up-label" for="up-code">Access code</label>
+          <input id="up-code" class="units-input" type="password" autocomplete="off" placeholder="Access code" />
+        </div>
+        <div class="up-field">
+          <label class="up-label" for="up-account">Account name</label>
+          <input id="up-account" class="units-input" type="text" list="up-account-list" maxlength="40"
+            placeholder="e.g. EasyEquities ZAR (leave blank to use the statement's name)" />
+          <datalist id="up-account-list"></datalist>
+        </div>
+        <div class="up-field">
+          <label class="up-label" for="up-file">Statement PDF (max 3MB, 15 pages)</label>
+          <input id="up-file" class="up-file" type="file" accept="application/pdf,.pdf" />
+        </div>
+        <div id="up-form-error" class="builder-error" style="display:none"></div>
+        <div class="up-actions">
+          <button id="up-read-btn" class="btn btn-primary" disabled>Read statement</button>
+        </div>
+      </div>
+
+      <div id="up-step-busy" class="up-spinner" style="display:none">Reading your statement… this takes about 10–20 seconds.</div>
+
+      <div id="up-step-review" style="display:none">
+        <div id="up-summary" class="up-summary"></div>
+        <ul id="up-warnings" class="up-warn-list" style="display:none"></ul>
+        <div class="up-field">
+          <label class="up-label" for="up-review-account">Import into account</label>
+          <input id="up-review-account" class="units-input" type="text" maxlength="40" list="up-account-list" />
+        </div>
+        <div style="overflow-x:auto">
+          <table class="up-table">
+            <thead><tr>
+              <th></th><th>Instrument</th><th>Ticker</th><th>Units</th>
+              <th class="num hide-sm">Statement value</th><th class="num hide-sm">Value today</th><th class="hide-sm">Status</th>
+            </tr></thead>
+            <tbody id="up-rows"></tbody>
+          </table>
+        </div>
+        <div id="up-preview" class="up-preview"></div>
+        <div id="up-review-error" class="builder-error" style="display:none"></div>
+        <div class="up-actions">
+          <button id="up-back-btn" class="btn-ghost">Back</button>
+          <button id="up-confirm-btn" class="btn btn-primary">Replace holdings</button>
+        </div>
+        <div id="up-foot" class="up-foot"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- ── Info modal ── -->
 <div id="info-modal-overlay" style="display:none">
   <div id="info-modal">
@@ -764,7 +879,7 @@
         to show your true exposure across ETFs and individual stocks.
       </p>
       <p style="font-size:0.875rem;color:#8b949e;line-height:1.65">
-        Your data is stored entirely in your browser — no accounts, no servers, nothing leaves your device.
+        Your portfolio is stored entirely in your browser: no accounts and no database. The only exception is the optional statement upload, which sends a PDF to the server and to Anthropic's Claude to read the holdings; it is not stored.
       </p>
     </div>
 
@@ -2018,6 +2133,247 @@
     localStorage.removeItem('xray-fx-timestamp');
     await refreshFxRates();
     renderDashboard();
+  });
+
+  /* ── Statement upload ── */
+  const uploadOverlay = document.getElementById('upload-overlay');
+  const upCode        = document.getElementById('up-code');
+  const upAccount     = document.getElementById('up-account');
+  const upFile        = document.getElementById('up-file');
+  const upReadBtn     = document.getElementById('up-read-btn');
+  const upFormError   = document.getElementById('up-form-error');
+  const upReviewError = document.getElementById('up-review-error');
+  const upConfirmBtn  = document.getElementById('up-confirm-btn');
+  const upReviewAcct  = document.getElementById('up-review-account');
+  let upResult = null;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Names come from an uploaded document: strip markup characters before saving them
+  const cleanName = s => String(s || '').replace(/[<>"'`&]/g, '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  const fmtNum = (n, d = 2) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }) : '–';
+
+  function upShow(step) {
+    for (const id of ['up-step-form', 'up-step-busy', 'up-step-review']) {
+      document.getElementById(id).style.display = id === step ? 'block' : 'none';
+    }
+    document.getElementById('upload-title').textContent = step === 'up-step-review' ? 'Check the holdings' : 'Upload a statement';
+  }
+  function upError(el, msg) { el.textContent = msg || ''; el.style.display = msg ? 'block' : 'none'; }
+
+  function existingAccounts() {
+    const isDemo = localStorage.getItem('xray-is-demo') === 'true';
+    return [...new Set(loadHoldings().map(h => h.account).filter(a => a && !(isDemo && a === 'Demo')))];
+  }
+
+  function openUpload() {
+    closeAddPanel();
+    upCode.value = localStorage.getItem('xray-upload-code') || '';
+    upAccount.value = '';
+    upFile.value = '';
+    document.getElementById('up-account-list').innerHTML =
+      existingAccounts().map(a => `<option value="${esc(a)}"></option>`).join('');
+    upError(upFormError); upError(upReviewError);
+    upShow('up-step-form');
+    upValidateForm();
+    uploadOverlay.style.display = 'flex';
+  }
+  function closeUpload() { uploadOverlay.style.display = 'none'; upResult = null; }
+
+  function upValidateForm() { upReadBtn.disabled = !(upCode.value.trim() && upFile.files.length); }
+  upCode.addEventListener('input', upValidateForm);
+  upFile.addEventListener('change', () => {
+    const f = upFile.files[0];
+    upError(upFormError, f && f.size > 3 * 1024 * 1024 ? 'That PDF is larger than 3MB.' : '');
+    upValidateForm();
+  });
+
+  document.getElementById('open-upload-btn').addEventListener('click', openUpload);
+  document.getElementById('upload-close').addEventListener('click', closeUpload);
+  uploadOverlay.addEventListener('click', e => { if (e.target === e.currentTarget) closeUpload(); });
+  document.getElementById('up-back-btn').addEventListener('click', () => upShow('up-step-form'));
+
+  upReadBtn.addEventListener('click', async () => {
+    const file = upFile.files[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) return upError(upFormError, 'That PDF is larger than 3MB.');
+    upError(upFormError);
+    upShow('up-step-busy');
+    try {
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/pdf', 'X-Access-Code': upCode.value.trim() },
+        body: file,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.status === 401) localStorage.removeItem('xray-upload-code');
+      if (!res.ok) throw new Error(body.error || `Upload failed (${res.status}).`);
+      localStorage.setItem('xray-upload-code', upCode.value.trim());
+      upResult = body;
+      const st = body.statement || {};
+      upReviewAcct.value = upAccount.value.trim()
+        || [st.platform, st.accountLabel].filter(Boolean).join(' ').slice(0, 40)
+        || 'Statement';
+      renderUploadReview();
+      upShow('up-step-review');
+    } catch (err) {
+      upShow('up-step-form');
+      upError(upFormError, err.message);
+    }
+  });
+
+  function rowTicker(r) { return (r.chosenTicker ?? r.match?.symbol ?? '').trim(); }
+
+  function renderUploadReview() {
+    const { statement: st = {}, rows = [], warnings = [] } = upResult;
+    const ccy = st.currency || '';
+    document.getElementById('up-summary').innerHTML = [
+      st.platform && `<strong>${esc(st.platform)}</strong>`,
+      st.date && `as at ${esc(st.date)}`,
+      typeof st.totalValue === 'number' && `total ${esc(ccy)} ${fmtNum(st.totalValue)}`,
+      `${rows.length} row${rows.length === 1 ? '' : 's'} found`,
+    ].filter(Boolean).join(' · ');
+
+    const wl = document.getElementById('up-warnings');
+    wl.innerHTML = warnings.map(w => `<li>${esc(w)}</li>`).join('');
+    wl.style.display = warnings.length ? 'block' : 'none';
+
+    for (const r of rows) {
+      if (r.include === undefined) r.include = r.status === 'ok' || r.status === 'warn';
+    }
+
+    document.getElementById('up-rows').innerHTML = rows.map((r, i) => {
+      const isCash = r.assetType === 'CASH';
+      const blocked = r.status === 'error';
+      let tickerCell;
+      if (isCash) tickerCell = `<span style="color:#8b949e">Cash</span>`;
+      else if (!r.match && r.candidates?.length) {
+        tickerCell = `<select data-i="${i}" data-f="ticker">
+          <option value="">Pick…</option>
+          ${r.candidates.map(c => `<option value="${esc(c.symbol)}" ${rowTicker(r) === c.symbol ? 'selected' : ''}>${esc(c.symbol)} · ${esc(c.currency)} ${fmtNum(c.price)}</option>`).join('')}
+        </select>`;
+      } else {
+        tickerCell = `<input type="text" data-i="${i}" data-f="ticker" value="${esc(rowTicker(r))}" placeholder="Ticker" ${blocked ? 'disabled' : ''} />`;
+      }
+      const live = r.match && typeof r.match.price === 'number' && r.units ? r.units * r.match.price : null;
+      const status = r.status === 'needs_pick' && rowTicker(r) ? 'warn' : r.status;
+      const label = { ok: 'OK', warn: 'Check', needs_pick: 'Pick ticker', error: 'Error' }[status];
+      return `<tr>
+        <td><input type="checkbox" data-i="${i}" data-f="include" ${r.include ? 'checked' : ''} ${blocked ? 'disabled' : ''} /></td>
+        <td>${esc(r.name)}
+          ${r.errors.map(e => `<div class="up-row-err">${esc(e)}</div>`).join('')}
+          ${r.warnings.map(w => `<div class="up-row-warn">${esc(w)}</div>`).join('')}
+        </td>
+        <td style="min-width:110px">${tickerCell}</td>
+        <td style="min-width:90px"><input type="number" step="any" min="0" data-i="${i}" data-f="units" value="${r.units ?? ''}" ${blocked ? 'disabled' : ''} /></td>
+        <td class="num hide-sm">${esc(r.currency)} ${fmtNum(r.marketValue)}</td>
+        <td class="num hide-sm">${live === null ? '–' : `${esc(r.match.currency)} ${fmtNum(live)}`}</td>
+        <td class="hide-sm"><span class="up-badge ${status}">${label}</span></td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('#up-rows [data-f]').forEach(el => {
+      const r = rows[+el.dataset.i];
+      const ev = el.tagName === 'INPUT' && el.type !== 'checkbox' ? 'input' : 'change';
+      el.addEventListener(ev, () => {
+        if (el.dataset.f === 'include') r.include = el.checked;
+        if (el.dataset.f === 'units') r.units = parseFloat(el.value);
+        if (el.dataset.f === 'ticker') {
+          r.chosenTicker = el.value.trim().toUpperCase();
+          if (r.chosenTicker && r.chosenTicker !== r.match?.symbol) r.include = true;
+          if (el.tagName === 'SELECT') renderUploadReview();
+        }
+        renderUploadPreview();
+      });
+    });
+
+    const cost = typeof upResult.estCostUsd === 'number' ? ` · est. cost $${upResult.estCostUsd.toFixed(4)}` : '';
+    document.getElementById('up-foot').textContent = `Read by ${upResult.model || 'AI'} from ${upResult.pageCount || '?'} page(s)${cost}. Nothing was stored.`;
+    renderUploadPreview();
+  }
+
+  upReviewAcct.addEventListener('input', renderUploadPreview);
+
+  function selectedRows() {
+    return (upResult?.rows || []).filter(r => r.include && r.status !== 'error'
+      && (r.assetType === 'CASH' || rowTicker(r)) && r.units > 0);
+  }
+
+  function renderUploadPreview() {
+    const account = upReviewAcct.value.trim();
+    const picked = selectedRows();
+    const isDemo = localStorage.getItem('xray-is-demo') === 'true';
+    const current = isDemo ? [] : loadHoldings();
+    const replaced = current.filter(h => h.account === account);
+    const newTickers = new Set(picked.map(r => r.assetType === 'CASH' ? `CASH_${r.currency}` : rowTicker(r)));
+    const moved = current.filter(h => h.account !== account && newTickers.has(h.ticker));
+    const skipped = (upResult?.rows || []).length - picked.length;
+
+    const lines = [];
+    if (!account) lines.push('<span style="color:#f78166">Enter an account name.</span>');
+    else {
+      lines.push(`<strong>${picked.length}</strong> holding${picked.length === 1 ? '' : 's'} will be saved in <strong>${esc(account)}</strong>.`);
+      lines.push(replaced.length
+        ? `This replaces the ${replaced.length} holding${replaced.length === 1 ? '' : 's'} currently in that account: ${replaced.map(h => esc(displayTicker(h.ticker))).join(', ')}.`
+        : 'There are no holdings in that account yet.');
+    }
+    if (moved.length) lines.push(`Already held in another account and will move here: ${moved.map(h => `${esc(displayTicker(h.ticker))} (${esc(h.account)})`).join(', ')}.`);
+    if (isDemo) lines.push('The demo portfolio will be cleared.');
+    if (skipped) lines.push(`${skipped} row${skipped === 1 ? ' is' : 's are'} not selected and won't be imported.`);
+    document.getElementById('up-preview').innerHTML = lines.join('<br>');
+    upConfirmBtn.disabled = !account || !picked.length;
+  }
+
+  upConfirmBtn.addEventListener('click', async () => {
+    const account = upReviewAcct.value.trim();
+    const picked = selectedRows();
+    if (!account || !picked.length) return;
+    upConfirmBtn.disabled = true;
+    upError(upReviewError);
+    const now = new Date().toISOString();
+    const byTicker = new Map();
+
+    try {
+      for (const [n, r] of picked.entries()) {
+        upConfirmBtn.textContent = `Fetching ${n + 1}/${picked.length}…`;
+        if (r.assetType === 'CASH') {
+          const t = `CASH_${r.currency}`;
+          const prev = byTicker.get(t);
+          byTicker.set(t, { ticker: t, name: `Cash (${r.currency})`, units: (prev?.units || 0) + r.units,
+            currentPrice: 1, currency: r.currency, account, quoteType: 'CASH', source: 'statement' });
+          continue;
+        }
+        const ticker = rowTicker(r);
+        const prev = byTicker.get(ticker);
+        if (prev) { prev.units += r.units; continue; }
+        const res = await fetch(`/api/price/${encodeURIComponent(ticker)}`);
+        if (!res.ok) throw new Error(`Could not find "${ticker}" (row: ${r.name}). Fix the ticker or untick the row.`);
+        const q = await res.json();
+        byTicker.set(q.ticker, {
+          ticker: q.ticker, name: cleanName(q.name || r.name), units: r.units,
+          currentPrice: q.price, priceUpdatedAt: now, currency: q.currency, account,
+          quoteType: q.quoteType, sector: q.sector, country: q.country,
+          sectorWeightings: q.sectorWeightings, topHoldings: q.topHoldings,
+          source: 'statement', statementDate: upResult.statement?.date || null,
+        });
+        await new Promise(r => setTimeout(r, 150)); // be gentle with Yahoo
+      }
+
+      const isDemo = localStorage.getItem('xray-is-demo') === 'true';
+      const incoming = [...byTicker.values()];
+      const keep = (isDemo ? [] : loadHoldings())
+        .filter(h => h.account !== account && !byTicker.has(h.ticker));
+      saveHoldings([...keep, ...incoming]);
+      if (isDemo) localStorage.removeItem('xray-is-demo');
+      localStorage.removeItem('xray-fx-timestamp');
+      closeUpload();
+      await refreshFxRates();
+      renderDashboard();
+    } catch (err) {
+      upError(upReviewError, err.message);
+    } finally {
+      upConfirmBtn.textContent = 'Replace holdings';
+      upConfirmBtn.disabled = false;
+    }
   });
 
   /* ── Clear & Export ── */
