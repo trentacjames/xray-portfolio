@@ -2245,14 +2245,19 @@
       const isCash = r.assetType === 'CASH';
       const blocked = r.status === 'error';
       let tickerCell;
+      const opts = r.candidates || [];
+      const cur = rowTicker(r);
       if (isCash) tickerCell = `<span style="color:#8b949e">Cash</span>`;
-      else if (!r.match && r.candidates?.length) {
-        tickerCell = `<select data-i="${i}" data-f="ticker">
-          <option value="">Pick…</option>
-          ${r.candidates.map(c => `<option value="${esc(c.symbol)}" ${rowTicker(r) === c.symbol ? 'selected' : ''}>${esc(c.symbol)} · ${esc(c.currency)} ${fmtNum(c.price)}</option>`).join('')}
+      else if (opts.length && !r.typing) {
+        const inList = opts.some(c => c.symbol === cur);
+        tickerCell = `<select data-i="${i}" data-f="ticker" ${blocked ? 'disabled' : ''}>
+          ${!cur ? '<option value="">Pick…</option>' : ''}
+          ${!inList && cur ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : ''}
+          ${opts.map(c => `<option value="${esc(c.symbol)}" ${cur === c.symbol ? 'selected' : ''}>${esc(c.symbol)} · ${esc(c.currency)} ${fmtNum(c.price)}${c.name ? ' · ' + esc(String(c.name).slice(0, 28)) : ''}</option>`).join('')}
+          <option value="__other">Other…</option>
         </select>`;
       } else {
-        tickerCell = `<input type="text" data-i="${i}" data-f="ticker" value="${esc(rowTicker(r))}" placeholder="Ticker" ${blocked ? 'disabled' : ''} />`;
+        tickerCell = `<input type="text" data-i="${i}" data-f="ticker" value="${esc(cur)}" placeholder="Ticker" ${blocked ? 'disabled' : ''} />`;
       }
       const live = r.match && typeof r.match.price === 'number' && r.units ? r.units * r.match.price : null;
       const status = r.status === 'needs_pick' && rowTicker(r) ? 'warn' : r.status;
@@ -2278,8 +2283,14 @@
         if (el.dataset.f === 'include') r.include = el.checked;
         if (el.dataset.f === 'units') r.units = parseFloat(el.value);
         if (el.dataset.f === 'ticker') {
+          if (el.value === '__other') {
+            r.typing = true; r.chosenTicker = '';
+            renderUploadReview();
+            document.querySelector(`#up-rows input[data-i="${el.dataset.i}"][data-f="ticker"]`)?.focus();
+            return;
+          }
           r.chosenTicker = el.value.trim().toUpperCase();
-          if (r.chosenTicker && r.chosenTicker !== r.match?.symbol) r.include = true;
+          if (r.chosenTicker) r.include = true;
           if (el.tagName === 'SELECT') renderUploadReview();
         }
         renderUploadPreview();

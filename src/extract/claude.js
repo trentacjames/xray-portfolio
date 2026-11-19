@@ -29,7 +29,7 @@ const TOOL = {
           type: 'object',
           properties: {
             name:          { type: 'string', description: 'Instrument name exactly as printed, joining names that wrap across lines.' },
-            ticker:        { type: ['string', 'null'], description: 'Exchange ticker if printed. Otherwise your best guess for a well-known listed instrument (e.g. STX40 for Satrix 40), or null.' },
+            ticker:        { type: ['string', 'null'], description: 'Exchange ticker if printed. Otherwise always give your best guess for any listed share or ETF: the primary-listing code without exchange prefix, e.g. AAPL, VOO, NPN, STX40. Null only for unlisted funds or if you have no idea.' },
             ticker_source: { type: 'string', enum: ['printed', 'guessed', 'none'] },
             isin:          { type: ['string', 'null'], description: 'ISIN if printed.' },
             asset_type:    { type: 'string', enum: ['ETF', 'EQUITY', 'FUND', 'CASH', 'OTHER'] },
