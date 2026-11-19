@@ -855,7 +855,7 @@
         <div id="up-review-error" class="builder-error" style="display:none"></div>
         <div class="up-actions">
           <button id="up-back-btn" class="btn-ghost">Back</button>
-          <button id="up-confirm-btn" class="btn btn-primary">Replace holdings</button>
+          <button id="up-confirm-btn" class="btn btn-primary">Add holdings</button>
         </div>
         <div id="up-foot" class="up-foot"></div>
       </div>
@@ -2382,7 +2382,7 @@
     } catch (err) {
       upError(upReviewError, err.message);
     } finally {
-      upConfirmBtn.textContent = 'Replace holdings';
+      upConfirmBtn.textContent = 'Add holdings';
       upConfirmBtn.disabled = false;
     }
   });
