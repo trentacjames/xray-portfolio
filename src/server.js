@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const YahooFinance = require('yahoo-finance2').default;
+const { createExtractRouter } = require('./extract/route');
 
 const app = express();
 const PORT = 3000;
@@ -31,6 +32,34 @@ const MAX_TICKERS = 50;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Helpers shared by statement upload: batch quotes and instrument search
+async function quoteMany(symbols) {
+  const out = {};
+  if (!symbols.length) return out;
+  try {
+    const quotes = await yahooFinance.quote(symbols, { return: 'array' }, { validateResult: false });
+    for (const q of Array.isArray(quotes) ? quotes : []) {
+      if (!q?.symbol || typeof q.regularMarketPrice !== 'number') continue;
+      const { price, currency } = normalisePrice(q.regularMarketPrice, q.currency);
+      out[q.symbol] = { price, currency, name: q.longName || q.shortName || q.symbol, quoteType: q.quoteType };
+    }
+  } catch (err) {
+    console.warn('Batch quote failed:', err.message);
+  }
+  return out;
+}
+
+async function searchInstruments(q) {
+  const result = await yahooFinance.search(q);
+  return result.quotes
+    .filter(r => r.quoteType === 'EQUITY' || r.quoteType === 'ETF' || r.quoteType === 'MUTUALFUND')
+    .slice(0, 8)
+    .map(r => ({ symbol: r.symbol, shortname: r.shortname || r.longname || r.symbol, exchange: r.exchange, quoteType: r.quoteType }));
+}
+
+// Statement upload (behind an access code)
+app.use('/api/extract', createExtractRouter({ quoteMany, search: searchInstruments }));
 
 app.get('/api/search', async (req, res) => {
   const q = (req.query.q || '').trim();
