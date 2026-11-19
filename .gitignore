@@ -4,3 +4,4 @@ node_modules/
 # Private statements: never commit
 statementsamples/
 private-statements/
+.DS_Store
