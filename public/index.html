@@ -312,6 +312,37 @@
       text-transform: uppercase; letter-spacing: 0.08em;
     }
 
+    /* Top holdings heat map */
+    .th-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .th-rest { font-size: 0.72rem; color: #8b949e; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .th-seg { display: inline-flex; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
+    .th-seg button { background: transparent; border: none; color: #8b949e; font-size: 0.72rem; padding: 4px 11px; cursor: pointer; }
+    .th-seg button.on { background: #21262d; color: #e6edf3; }
+    #top-holdings-map-wrap { padding: 16px 22px 14px; }
+    #top-holdings-map { position: relative; width: 100%; height: 380px; }
+    .th-tile {
+      position: absolute; box-sizing: border-box; border: 2px solid #161b22; border-radius: 6px;
+      overflow: hidden; padding: 8px 9px; cursor: pointer; transition: filter 0.12s, box-shadow 0.12s;
+    }
+    @media (hover: hover) {
+      .th-tile:hover { filter: brightness(1.15); box-shadow: inset 0 0 0 2px #e6edf3; }
+      .th-tile.rest:hover { filter: none; box-shadow: none; }
+    }
+    .th-tile.rest { cursor: default; }
+    .th-name { font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .th-ticker { opacity: 0.8; line-height: 1.35; }
+    .th-pct { font-weight: 600; line-height: 1.35; font-variant-numeric: tabular-nums; }
+    .th-routes { font-size: 11px; opacity: 0.8; margin-top: 6px; line-height: 1.4; }
+    .th-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 0.7rem; color: #8b949e; margin-top: 12px; }
+    .th-legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+    @media (max-width: 768px) {
+      #top-holdings-map-wrap { padding: 12px 12px 10px; }
+      #top-holdings-map { height: 300px; }
+      #top-holdings-card .table-card-header { flex-wrap: wrap; gap: 8px; }
+      #top-holdings-card .th-controls { width: 100%; justify-content: space-between; }
+      .th-legend .th-legend-note { display: none; }
+    }
+
     .top-hold-row {
       display: flex; align-items: center; gap: 12px;
       padding: 9px 22px; border-bottom: 1px solid #161b22;
@@ -325,7 +356,7 @@
     }
     .top-hold-name { flex: 1; font-size: 0.8rem; color: #8b949e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .top-hold-bar { width: 96px; flex-shrink: 0; height: 4px; background: #21262d; border-radius: 2px; overflow: hidden; }
-    .top-hold-bar-fill { height: 100%; background: #3fb950; border-radius: 2px; }
+    .top-hold-bar-fill { height: 100%; background: #1f6feb; border-radius: 2px; }
     .top-hold-pct { font-size: 0.8rem; color: #c9d1d9; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
     .top-hold-chevron { color: #30363d; font-size: 1rem; flex-shrink: 0; transition: color 0.1s; }
     .top-hold-row:hover .top-hold-chevron { color: #8b949e; }
@@ -753,9 +784,18 @@
     <div class="table-card" id="top-holdings-card" style="display:none">
       <div class="table-card-header">
         <h2>Top Underlying Holdings</h2>
-        <span style="font-size:0.72rem; color:#484f58">via ETF look-through &nbsp;·&nbsp; click any row to explore</span>
+        <div class="th-controls">
+          <label class="th-rest" id="th-rest-label"><input type="checkbox" id="th-rest" /> Show rest of portfolio</label>
+          <div class="th-seg" role="group" aria-label="View">
+            <button id="th-view-map" class="on">Map</button><button id="th-view-list">List</button>
+          </div>
+        </div>
       </div>
-      <div id="top-holdings-container"></div>
+      <div id="top-holdings-map-wrap">
+        <div id="top-holdings-map"></div>
+        <div class="th-legend" id="th-legend"></div>
+      </div>
+      <div id="top-holdings-container" style="display:none"></div>
     </div>
 
   </div>
@@ -903,7 +943,7 @@
         <div class="info-step-num">3</div>
         <div>
           <div class="info-step-title">Drill into the detail</div>
-          <div class="info-step-body">Click any holding name in the sidebar to see its full data. Click any row in <em>Top Underlying Holdings</em> to see your total exposure to that company — direct and indirect through ETFs combined.</div>
+          <div class="info-step-body">Click any holding name in the sidebar to see its full data. Click any tile in the <em>Top Underlying Holdings</em> map (or any row in List view) to see your total exposure to that company — direct and indirect through ETFs combined.</div>
         </div>
       </div>
     </div>
@@ -916,7 +956,7 @@
       </div>
       <div class="info-concept">
         <div class="info-concept-title">Top Underlying Holdings</div>
-        <div class="info-concept-body">Each ETF's top holdings are weighted by your allocation to that ETF, then aggregated to show company-level exposure across your whole portfolio — ranked by total exposure (direct + indirect).</div>
+        <div class="info-concept-body">Each ETF's top holdings are weighted by your allocation to that ETF, then aggregated to show company-level exposure across your whole portfolio. In the map, tile size is the estimated share of your portfolio and brighter blue means the company reaches you through more routes (ETFs plus any direct holding).</div>
       </div>
       <div class="info-concept">
         <div class="info-concept-title">Exclude from charts &nbsp;<span style="color:#3fb950;font-size:0.8rem">●</span></div>
@@ -1648,8 +1688,9 @@
       const w = toBase(h.units * h.currentPrice, h.currency) / total;
       for (const th of h.topHoldings) {
         const key = th.symbol || th.name;
-        if (!agg[key]) agg[key] = { symbol: th.symbol, name: th.name, indirectPct: 0, directPct: 0 };
+        if (!agg[key]) agg[key] = { symbol: th.symbol, name: th.name, indirectPct: 0, directPct: 0, routes: [] };
         agg[key].indirectPct += w * th.pct;
+        if (!agg[key].routes.includes(h.ticker)) agg[key].routes.push(h.ticker);
       }
     }
 
@@ -1657,6 +1698,7 @@
       if (excluded.has(h.ticker) || h.quoteType !== 'EQUITY') continue;
       if (agg[h.ticker]) {
         agg[h.ticker].directPct = toBase(h.units * h.currentPrice, h.currency) / total * 100;
+        if (!agg[h.ticker].routes.includes('Direct')) agg[h.ticker].routes.push('Direct');
       }
     }
 
@@ -1671,16 +1713,111 @@
       .slice(0, 15);
   }
 
+  /* Heat map (default) and list view of the top 15 underlying holdings.
+     Tile size = estimated % of portfolio; colour = number of routes (ETFs + direct). */
+  const TH_COLOURS = [null, ['#0c2d6b', '#79c0ff'], ['#174a9c', '#cae8ff'], ['#1f6feb', '#ffffff'], ['#58a6ff', '#0d1117']];
+  let thItems = [];
+  let thView = (() => { try { return localStorage.getItem('xray-top-view') || 'map'; } catch { return 'map'; } })();
+  let thRest = false;
+
+  function thEsc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // Squarified treemap: lays out items (with .v) in the box, keeping tiles close to square
+  function thSquarify(items, x, y, w, h, out) {
+    if (!items.length || w <= 0 || h <= 0) return out;
+    const total = items.reduce((s, i) => s + i.v, 0);
+    const scaled = items.map(i => ({ ...i, a: i.v / total * w * h }));
+    const side = Math.min(w, h);
+    const worst = row => {
+      const sum = row.reduce((s, r) => s + r.a, 0);
+      const max = Math.max(...row.map(r => r.a)), min = Math.min(...row.map(r => r.a));
+      return Math.max(side * side * max / (sum * sum), sum * sum / (side * side * min));
+    };
+    let row = [], i = 0;
+    while (i < scaled.length) {
+      const next = [...row, scaled[i]];
+      if (!row.length || worst(next) <= worst(row)) { row = next; i++; } else break;
+    }
+    const sum = row.reduce((s, r) => s + r.a, 0);
+    if (w >= h) {
+      const rw = sum / h; let cy = y;
+      row.forEach(r => { const rh = r.a / rw; out.push({ ...r, x, y: cy, w: rw, h: rh }); cy += rh; });
+      return thSquarify(scaled.slice(i), x + rw, y, w - rw, h, out);
+    }
+    const rh = sum / w; let cx = x;
+    row.forEach(r => { const cw = r.a / rh; out.push({ ...r, x: cx, y, w: cw, h: rh }); cx += cw; });
+    return thSquarify(scaled.slice(i), x, y + rh, w, h - rh, out);
+  }
+
   function renderTopHoldings(items) {
     const card = document.getElementById('top-holdings-card');
+    thItems = items;
     if (!items.length) { card.style.display = 'none'; return; }
     card.style.display = 'block';
+    const isMap = thView === 'map';
+    document.getElementById('th-view-map').classList.toggle('on', isMap);
+    document.getElementById('th-view-list').classList.toggle('on', !isMap);
+    document.getElementById('th-rest-label').style.display = isMap ? 'flex' : 'none';
+    document.getElementById('top-holdings-map-wrap').style.display = isMap ? 'block' : 'none';
+    document.getElementById('top-holdings-container').style.display = isMap ? 'none' : 'block';
+    if (isMap) renderTopHoldingsMap(items); else renderTopHoldingsList(items);
+  }
+
+  function renderTopHoldingsMap(items) {
+    const box = document.getElementById('top-holdings-map');
+    const W = box.clientWidth, H = box.clientHeight;
+    if (!W || !H) return;
+
+    const tiles = items.map(it => ({ ...it, v: it.totalPct }));
+    if (thRest) {
+      const top = tiles.reduce((s, t) => s + t.v, 0);
+      if (top < 100) tiles.push({ rest: true, name: 'Rest of portfolio', totalPct: parseFloat((100 - top).toFixed(1)), v: 100 - top, routes: [] });
+    }
+    tiles.sort((a, b) => b.v - a.v);
+
+    box.innerHTML = thSquarify(tiles.filter(t => t.v > 0), 0, 0, W, H, []).map(t => {
+      const n = Math.min(Math.max(t.routes?.length || 1, 1), 4);
+      const [bg, fg] = t.rest ? ['#21262d', '#8b949e'] : TH_COLOURS[n];
+      const fs = Math.max(11, Math.min(16, Math.sqrt(t.w * t.h) / 7.5));
+      const ticker = t.symbol ? displayTicker(t.symbol) : '';
+      let inner = '';
+      if (t.w > 50 && t.h > 58) {
+        inner = `<div class="th-name" style="font-size:${fs}px">${thEsc(t.name || ticker)}</div>` +
+          (ticker ? `<div class="th-ticker" style="font-size:${Math.max(11, fs - 4)}px">${thEsc(ticker)}</div>` : '') +
+          `<div class="th-pct" style="font-size:${Math.max(11, fs - 2)}px">${t.totalPct.toFixed(1)}%</div>`;
+        if (!t.rest && t.w > 120 && t.h > 105 && t.routes?.length) {
+          inner += `<div class="th-routes">${t.routes.map(r => thEsc(r === 'Direct' ? r : displayTicker(r))).join(' · ')}</div>`;
+        }
+      } else if (t.w > 32 && t.h > 22) {
+        inner = `<div style="font-size:11px;font-weight:600">${thEsc(ticker || (t.rest ? 'Rest' : ''))}</div>`;
+      }
+      const title = t.rest ? '' : `${t.name || ticker}${ticker ? ` (${ticker})` : ''} · ${t.totalPct.toFixed(1)}%`;
+      return `<div class="th-tile${t.rest ? ' rest' : ''}" ${t.rest ? '' : `role="button" tabindex="0"`}
+        data-symbol="${thEsc(t.symbol || '')}" data-name="${thEsc(t.name || '')}" title="${thEsc(title)}"
+        style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px;background:${bg};color:${fg}">${inner}</div>`;
+    }).join('');
+
+    box.querySelectorAll('.th-tile:not(.rest)').forEach(el => {
+      const open = () => showEtfOwnership(el.dataset.symbol, el.dataset.name);
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+
+    const sw = (c, label) => `<span><span class="sw" style="background:${c}"></span>${label}</span>`;
+    document.getElementById('th-legend').innerHTML =
+      sw(TH_COLOURS[1][0], '1 route') + sw(TH_COLOURS[2][0], '2 routes') + sw(TH_COLOURS[3][0], '3 routes') + sw(TH_COLOURS[4][0], '4+ routes') +
+      `<span class="th-legend-note" style="margin-left:auto">Tile size = estimated % of portfolio · click a tile to explore</span>`;
+  }
+
+  function renderTopHoldingsList(items) {
     const max = items[0].totalPct;
     const container = document.getElementById('top-holdings-container');
     container.innerHTML = items.map(item => `
-      <div class="top-hold-row" data-symbol="${item.symbol || ''}" data-name="${(item.name || '').replace(/"/g, '&quot;')}">
-        <span class="top-hold-symbol">${item.symbol || '—'}</span>
-        <span class="top-hold-name">${item.name || ''}</span>
+      <div class="top-hold-row" data-symbol="${thEsc(item.symbol || '')}" data-name="${thEsc(item.name || '')}">
+        <span class="top-hold-symbol">${thEsc(item.symbol || '—')}</span>
+        <span class="top-hold-name">${thEsc(item.name || '')}</span>
         <div class="top-hold-bar">
           <div class="top-hold-bar-fill" style="width:${max ? (item.totalPct / max * 100) : 0}%"></div>
         </div>
@@ -1691,6 +1828,22 @@
     container.querySelectorAll('.top-hold-row').forEach(row =>
       row.addEventListener('click', () => showEtfOwnership(row.dataset.symbol, row.dataset.name))
     );
+  }
+
+  function setTopView(view) {
+    thView = view;
+    try { localStorage.setItem('xray-top-view', view); } catch { /* storage unavailable */ }
+    renderTopHoldings(thItems);
+  }
+  document.getElementById('th-view-map').addEventListener('click', () => setTopView('map'));
+  document.getElementById('th-view-list').addEventListener('click', () => setTopView('list'));
+  document.getElementById('th-rest').addEventListener('change', e => { thRest = e.target.checked; renderTopHoldings(thItems); });
+  if (window.ResizeObserver) {
+    let thLastW = 0;
+    new ResizeObserver(entries => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (w !== thLastW && thView === 'map' && thItems.length) { thLastW = w; renderTopHoldingsMap(thItems); }
+    }).observe(document.getElementById('top-holdings-map'));
   }
 
   function showEtfOwnership(symbol, stockName) {
