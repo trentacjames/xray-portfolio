@@ -14,7 +14,7 @@ function clientIp(req) {
 }
 
 // Returns null when allowed, otherwise { status, error }.
-function checkAccess(req, { code = process.env.XRAY_UPLOAD_CODE, now = Date.now() } = {}) {
+function checkAccess(req, { code = process.env.XRAY_UPLOAD_CODE || process.env.xray_upload_code, now = Date.now() } = {}) {
   if (!code) return { status: 503, error: 'Statement upload is not enabled on this server.' };
 
   const ip = clientIp(req);

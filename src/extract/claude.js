@@ -67,7 +67,9 @@ function estimateCost(model, usage) {
 async function extractHoldings(text, { client, model = process.env.XRAY_EXTRACT_MODEL || DEFAULT_MODEL } = {}) {
   if (!client) {
     const Anthropic = require('@anthropic-ai/sdk').default;
-    client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
+    // Accept either spelling of the variable name (Vercel has it in lowercase)
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.anthropic_api_key;
+    client = new Anthropic({ apiKey });
   }
   const res = await client.messages.create({
     model,
