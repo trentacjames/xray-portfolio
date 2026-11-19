@@ -538,6 +538,10 @@
     .ix-step-num { font-size: 0.68rem; color: #484f58; font-family: 'SF Mono','Fira Code',monospace; margin-bottom: 4px; }
     .ix-step-title { font-size: 0.9rem; font-weight: 600; color: #e6edf3; margin-bottom: 4px; letter-spacing: -0.01em; }
     .ix-step-body { font-size: 0.78rem; color: #7d8590; line-height: 1.45; }
+    .ix-cta { display: block; width: 100%; margin-top: 26px; padding: 12px 16px; border: none; border-radius: 10px;
+      background: #1f6feb; color: #fff; font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+    .ix-cta:hover { background: #388bfd; }
+    .ix-cta:active { transform: scale(0.99); }
     .ix-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
     .ix-notes li { font-size: 0.74rem; color: #545d68; line-height: 1.45; padding-left: 14px; position: relative; }
     .ix-notes li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 1px; background: #3a434e; }
@@ -942,6 +946,8 @@
         <li>Saved in your browser. Uploaded PDFs are read, then binned. Upload needs an access code.</li>
         <li>Live Yahoo Finance data, top fund holdings only. Treat numbers as estimates.</li>
       </ul>
+
+      <button class="ix-cta" id="info-start-btn">Get started</button>
     </div>
   </div>
 </div>
@@ -2557,8 +2563,11 @@
   /* ── Info modal ── */
   const infoOverlay = document.getElementById('info-modal-overlay');
   document.getElementById('info-btn').addEventListener('click', () => infoOverlay.style.display = 'flex');
-  document.getElementById('info-modal-close').addEventListener('click', () => infoOverlay.style.display = 'none');
-  infoOverlay.addEventListener('click', e => { if (e.target === e.currentTarget) infoOverlay.style.display = 'none'; });
+  const closeInfo = () => { infoOverlay.style.display = 'none'; };
+  document.getElementById('info-modal-close').addEventListener('click', closeInfo);
+  document.getElementById('info-start-btn').addEventListener('click', closeInfo);
+  // Opens on every visit; clicking the backdrop does not close it, so the user must dismiss it.
+  infoOverlay.style.display = 'flex';
 
   /* ── Base currency selector ── */
   document.getElementById('base-currency-select').addEventListener('change', async e => {
